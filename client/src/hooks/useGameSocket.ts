@@ -1,84 +1,155 @@
-import {
-  CLIENT_EVENTS,
-  SERVER_EVENTS,
-  TOTAL_WORDS,
-  type CellCoord,
-  type CreateRoomPayload,
-  type JoinRoomPayload,
-  type PublicGameState,
-  type SubmitSelectionPayload,
-} from '@word-crush-duel/shared';
+import { TOTAL_WORDS, type CellCoord, type PublicGameState } from '@word-crush-duel/shared';
+import { child, get, onValue, ref, runTransaction, set } from 'firebase/database';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { getFirebaseDatabase, firebaseConfigured } from '../lib/firebase';
+import {
+  CASCADE_DURATION_MS,
+  createRoomState,
+  generateRoomCode,
+  joinRoomState,
+  rematchState,
+  settleCascadeState,
+  submitSelectionState,
+  toPublicGameState,
+  type FirebaseGameState,
+} from '../lib/gameEngine';
 import { getRoomCodeFromUrl } from '../lib/inviteLink';
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+function getStoredPlayerId(): string {
+  const key = 'word-crush-player-id';
+  const existing = window.localStorage.getItem(key);
+  if (existing) return existing;
+  const generated = window.crypto?.randomUUID?.() ?? 'player-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  window.localStorage.setItem(key, generated);
+  return generated;
+}
+
+function roomPath(roomCode: string): string {
+  return 'rooms/' + roomCode.toUpperCase();
+}
 
 export function useGameSocket() {
-  const socketRef = useRef<Socket | null>(null);
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(firebaseConfigured);
   const [gameState, setGameState] = useState<PublicGameState | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    firebaseConfigured ? null : 'Firebase config is missing. Add your VITE_FIREBASE_* values.',
+  );
+  const [playerId] = useState(() => getStoredPlayerId());
+  const [activeRoomCode, setActiveRoomCode] = useState<string | null>(null);
   const [inviteRoomCode] = useState(() => getRoomCodeFromUrl());
+  const settleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
-    socketRef.current = socket;
+    setConnected(firebaseConfigured);
+  }, []);
 
-    socket.on('connect', () => {
-      setConnected(true);
-      setPlayerId(socket.id ?? null);
-    });
-
-    socket.on('disconnect', () => setConnected(false));
-
-    socket.on(SERVER_EVENTS.ROOM_STATE, (state: PublicGameState) => {
-      setGameState(state);
+  useEffect(() => {
+    if (!firebaseConfigured || !activeRoomCode) return undefined;
+    const db = getFirebaseDatabase();
+    const roomRef = ref(db, roomPath(activeRoomCode));
+    return onValue(roomRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setGameState(null);
+        setError('Room not found');
+        return;
+      }
+      setGameState(toPublicGameState(snapshot.val() as FirebaseGameState));
       setError(null);
     });
+  }, [activeRoomCode]);
 
-    socket.on(SERVER_EVENTS.ERROR, (payload: { message: string }) => {
-      setError(payload.message);
-    });
+  useEffect(() => {
+    if (!firebaseConfigured || !activeRoomCode || !gameState?.cascadeAnimating) return undefined;
+    if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = window.setTimeout(() => {
+      const db = getFirebaseDatabase();
+      void runTransaction(ref(db, roomPath(activeRoomCode)), (current: FirebaseGameState | null) => {
+        if (!current) return current;
+        return settleCascadeState(current);
+      });
+    }, CASCADE_DURATION_MS);
 
     return () => {
-      socket.disconnect();
+      if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
     };
-  }, []);
+  }, [activeRoomCode, gameState?.cascadeAnimating]);
 
-  const createRoom = useCallback((playerName: string) => {
-    const payload: CreateRoomPayload = { playerName };
-    socketRef.current?.emit(CLIENT_EVENTS.CREATE_ROOM, payload);
-  }, []);
-
-  const joinRoom = useCallback((roomCode: string, playerName: string) => {
-    const payload: JoinRoomPayload = { roomCode, playerName };
-    socketRef.current?.emit(CLIENT_EVENTS.JOIN_ROOM, payload);
-  }, []);
-
-  const startGame = useCallback(() => {
-    socketRef.current?.emit(CLIENT_EVENTS.START_GAME);
-  }, []);
-
-  const submitSelection = useCallback((roomCode: string, path: CellCoord[], word: string) => {
-    const payload: SubmitSelectionPayload = { roomCode, path, word };
-    socketRef.current?.emit(CLIENT_EVENTS.SUBMIT_SELECTION, payload);
-  }, []);
-
-  const rematch = useCallback(() => {
-    socketRef.current?.emit(CLIENT_EVENTS.REMATCH);
-  }, []);
-
-  const self = useMemo(
-    () => gameState?.players.find((player) => player?.id === playerId) ?? null,
-    [gameState, playerId],
+  const createRoom = useCallback(
+    async (playerName: string) => {
+      if (!firebaseConfigured) return;
+      const db = getFirebaseDatabase();
+      setError(null);
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const roomCode = generateRoomCode();
+        const roomRef = child(ref(db), roomPath(roomCode));
+        const snapshot = await get(roomRef);
+        if (snapshot.exists()) continue;
+        await set(roomRef, createRoomState(roomCode, playerId, playerName));
+        setActiveRoomCode(roomCode);
+        return;
+      }
+      setError('Could not create a unique room. Try again.');
+    },
+    [playerId],
   );
 
-  const opponent = useMemo(
-    () => gameState?.players.find((player) => player && player.id !== playerId) ?? null,
-    [gameState, playerId],
+  const joinRoom = useCallback(
+    async (roomCode: string, playerName: string) => {
+      if (!firebaseConfigured) return;
+      const code = roomCode.trim().toUpperCase();
+      if (!code) return;
+      const db = getFirebaseDatabase();
+      let transactionError: string | null = null;
+      const result = await runTransaction(ref(db, roomPath(code)), (current: FirebaseGameState | null) => {
+        if (!current) {
+          transactionError = 'Room not found';
+          return current;
+        }
+        const next = joinRoomState(current, playerId, playerName);
+        transactionError = next.error;
+        return next.state;
+      });
+      if (!result.committed || transactionError) {
+        setError(transactionError ?? 'Could not join room');
+        return;
+      }
+      setActiveRoomCode(code);
+      setError(null);
+    },
+    [playerId],
   );
+
+  const submitSelection = useCallback(
+    async (roomCode: string, path: CellCoord[], word: string) => {
+      if (!firebaseConfigured) return;
+      const db = getFirebaseDatabase();
+      let transactionError: string | null = null;
+      await runTransaction(ref(db, roomPath(roomCode)), (current: FirebaseGameState | null) => {
+        if (!current) {
+          transactionError = 'Room not found';
+          return current;
+        }
+        const next = submitSelectionState(current, playerId, path, word);
+        transactionError = next.error;
+        return next.state;
+      });
+      if (transactionError) setError(transactionError);
+    },
+    [playerId],
+  );
+
+  const rematch = useCallback(async () => {
+    if (!firebaseConfigured || !gameState) return;
+    const db = getFirebaseDatabase();
+    await runTransaction(ref(db, roomPath(gameState.roomCode)), (current: FirebaseGameState | null) => {
+      if (!current) return current;
+      return rematchState(current);
+    });
+  }, [gameState]);
+
+  const self = useMemo(() => gameState?.players.find((player) => player?.id === playerId) ?? null, [gameState, playerId]);
+  const opponent = useMemo(() => gameState?.players.find((player) => player && player.id !== playerId) ?? null, [gameState, playerId]);
 
   return {
     connected,
@@ -89,7 +160,7 @@ export function useGameSocket() {
     opponent,
     createRoom,
     joinRoom,
-    startGame,
+    startGame: () => undefined,
     submitSelection,
     rematch,
     totalWords: TOTAL_WORDS,

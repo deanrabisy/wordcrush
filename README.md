@@ -13,17 +13,25 @@ npm run dev
 
 The client runs on http://localhost:5173 and the server runs on http://localhost:3001.
 
-## GitHub Pages
+## GitHub Pages and Firebase
 
-This repo includes `.github/workflows/pages.yml`, which publishes the Vite client from `client/dist` on pushes to `main`.
+This repo publishes the Vite client to GitHub Pages on pushes to `main`.
 
-GitHub Pages can host the React client, but it cannot host the Socket.IO/Express server. Host the server separately, then add a repository variable named `VITE_SERVER_URL` with the public server URL, for example:
+Live multiplayer uses Firebase Realtime Database directly from the browser, so no Render or Express server is required. Add these GitHub repository variables before deploying a playable production build:
 
 ```text
-https://your-word-crush-server.example.com
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_DATABASE_URL
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
 ```
 
-The server should also receive `CLIENT_ORIGIN` set to the GitHub Pages URL so CORS allows the deployed client.
+For local development, copy `client/.env.example` to `client/.env.local` and fill in the same values.
+
+The included `firebase.database.rules.json` is intentionally open for quick testing. Tighten these rules before sharing the game broadly.
 
 ## Branding
 
