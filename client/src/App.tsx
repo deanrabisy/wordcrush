@@ -6,7 +6,7 @@ import { Scoreboard, TargetBar } from './components/TargetBar';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useSoundEffects } from './hooks/useSoundEffects';
 
-const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
+const logoSrc = `${import.meta.env.BASE_URL}logo-round.png`;
 
 export default function App() {
   const [soundMuted, setSoundMuted] = useState(() => window.localStorage.getItem('word-crush-muted') === 'true');
@@ -94,7 +94,7 @@ export default function App() {
     <main className="app game">
       <header className="game-header">
         <div className="brand-lockup">
-          <img className="brand-logo" src={logoSrc} alt="Word Crush Duel logo" />
+          <img className="brand-logo brand-logo-round" src={logoSrc} alt="Word Crush Duel logo" />
           <h1>Word Crush Duel</h1>
         </div>
         <div className="game-actions">

@@ -24,7 +24,7 @@ type LobbyProps = {
 
 
 
-const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
+const logoSrc = `${import.meta.env.BASE_URL}logo-word-crush-duel.png`;
 
 export function Lobby({
 
@@ -94,16 +94,15 @@ export function Lobby({
 
     <div className="lobby card">
 
-      <div className="brand-lockup">
-        <img className="brand-logo" src={logoSrc} alt="Word Crush Duel logo" />
-        <h1>Word Crush Duel</h1>
+      <div className="brand-lockup lobby-brand">
+        <img className="brand-logo-full" src={logoSrc} alt="Word Crush Duel" />
       </div>
 
       <p className="subtitle">Race to find words on a shifting word-search grid.</p>
 
 
 
-      {!connected && <p className="status warn">Connecting to server…</p>}
+      {!connected && <p className="status warn">Connecting to server...</p>}
 
       {error && <p className="status error">{error}</p>}
 
@@ -131,9 +130,9 @@ export function Lobby({
 
           </button>
 
-          <p className="hint">Send the link — they can join with one click.</p>
+          <p className="hint">Send the link - they can join with one click.</p>
 
-          <p className="status">Waiting for opponent…</p>
+          <p className="status">Waiting for opponent...</p>
 
         </div>
 

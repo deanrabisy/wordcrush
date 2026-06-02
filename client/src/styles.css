@@ -34,6 +34,15 @@ button, input { font: inherit; }
   padding: 4px;
   box-shadow: 0 10px 28px rgba(7, 56, 74, 0.18);
 }
+.brand-logo-round { border-radius: 50%; padding: 0; }
+.lobby-brand { justify-content: center; }
+.brand-logo-full {
+  display: block;
+  width: min(310px, 100%);
+  max-height: 330px;
+  object-fit: contain;
+  margin: -8px auto -14px;
+}
 
 .lobby { width: min(460px, 100%); padding: 28px; display: grid; gap: 18px; }
 .lobby h1, .game-header h1 { margin: 0; font-size: 1.75rem; line-height: 1.05; }
@@ -120,6 +129,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .game-layout { grid-template-columns: 1fr; align-items: start; }
   .side-panel { align-self: auto; }
   .brand-logo { width: 52px; height: 52px; }
+  .brand-logo-full { width: min(260px, 100%); max-height: 280px; }
   .found-word-burst { font-size: 1.1rem; padding: 8px 18px; }
   .target-header { flex-direction: column; }
   .room-code { font-size: 1.95rem; }
