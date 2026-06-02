@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { GameOver } from './components/GameOver';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
@@ -7,9 +7,11 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { useSoundEffects } from './hooks/useSoundEffects';
 
 const logoSrc = `${import.meta.env.BASE_URL}logo-round.png`;
+const ownerLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 
 export default function App() {
   const [soundMuted, setSoundMuted] = useState(() => window.localStorage.getItem('word-crush-muted') === 'true');
+  const [fullscreen, setFullscreen] = useState(() => Boolean(document.fullscreenElement));
   const {
     connected,
     gameState,
@@ -27,6 +29,12 @@ export default function App() {
     inviteRoomCode,
   } = useGameSocket();
   useSoundEffects(gameState?.lastEvent, soundMuted);
+
+  useEffect(() => {
+    const updateFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', updateFullscreen);
+    return () => document.removeEventListener('fullscreenchange', updateFullscreen);
+  }, []);
 
   const handleSubmit = useCallback(
     (path: Parameters<typeof submitSelection>[1], word: string) => {
@@ -73,6 +81,13 @@ export default function App() {
       return next;
     });
   };
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+      return;
+    }
+    void document.documentElement.requestFullscreen();
+  };
 
   if (inLobby) {
     return (
@@ -98,9 +113,11 @@ export default function App() {
           <h1>Word Crush Duel</h1>
         </div>
         <div className="game-actions">
-          <span className="room-pill">Room {gameState.roomCode}</span>
           <button type="button" className="secondary compact-button" onClick={resetGame}>
             Reset
+          </button>
+          <button type="button" className="secondary compact-button" onClick={toggleFullscreen}>
+            {fullscreen ? 'Exit full screen' : 'Full screen'}
           </button>
           <button type="button" className="secondary compact-button" onClick={toggleSound}>
             {soundMuted ? 'Sound off' : 'Sound on'}
@@ -161,6 +178,7 @@ export default function App() {
           />
         </aside>
       </div>
+      <img className="owner-mark" src={ownerLogoSrc} alt="Adaptive Dean Design" />
     </main>
   );
 }

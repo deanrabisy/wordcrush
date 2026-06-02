@@ -114,9 +114,7 @@ export function Lobby({
 
           <p>Invite your opponent</p>
 
-          <div className="room-code">{roomCode}</div>
-
-          <label className="invite-link-field">
+          <label className="invite-link-field compact-invite">
 
             Share link
 
@@ -131,6 +129,8 @@ export function Lobby({
           </button>
 
           <p className="hint">Send the link - they can join with one click.</p>
+
+          <p className="hint fallback-code">Fallback code: {roomCode}</p>
 
           <p className="status">Waiting for opponent...</p>
 
