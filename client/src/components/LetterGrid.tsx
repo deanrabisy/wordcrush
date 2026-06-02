@@ -34,6 +34,10 @@ function pathToWord(grid: string[][], path: CellCoord[]): string {
   return path.map(({ row, col }) => grid[row][col]).join('');
 }
 
+function gridFingerprint(grid: string[][]): string {
+  return grid.map((row) => row.join('')).join('|');
+}
+
 function isContiguous(path: CellCoord[]): boolean {
   if (path.length < 2) return path.length === 1;
   const dr = path[1].row - path[0].row;
@@ -94,6 +98,8 @@ export function LetterGrid({
   const pathRef = useRef<CellCoord[]>([]);
   const draggingRef = useRef(false);
   const clearSelectionTimerRef = useRef<number | null>(null);
+  const displayGridKeyRef = useRef(gridFingerprint(grid));
+  const gridKey = useMemo(() => gridFingerprint(grid), [grid]);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
@@ -107,7 +113,10 @@ export function LetterGrid({
   useEffect(() => {
     if (!cascadeAnimating || !cascadeSteps) {
       if (!cascadeAnimating) {
-        setDisplayGrid(grid);
+        if (displayGridKeyRef.current !== gridKey) {
+          displayGridKeyRef.current = gridKey;
+          setDisplayGrid(grid);
+        }
         setAnimPhase('idle');
         setFoundLabel(null);
         stepsRef.current = null;
@@ -122,7 +131,9 @@ export function LetterGrid({
 
     const run = (phase: AnimPhase) => {
       setAnimPhase(phase);
-      setDisplayGrid(gridForPhase(phase, snapshot));
+      const phaseGrid = gridForPhase(phase, snapshot);
+      displayGridKeyRef.current = gridFingerprint(phaseGrid);
+      setDisplayGrid(phaseGrid);
     };
 
     run('celebrate');
@@ -132,17 +143,21 @@ export function LetterGrid({
     schedule(() => run('reveal'), PHASE_MS.celebrate + PHASE_MS.explode + PHASE_MS.fall + PHASE_MS.rain);
     schedule(() => {
       setAnimPhase('idle');
+      displayGridKeyRef.current = gridFingerprint(snapshot.finalGrid);
       setDisplayGrid(snapshot.finalGrid);
       setFoundLabel(null);
       stepsRef.current = null;
     }, PHASE_MS.celebrate + PHASE_MS.explode + PHASE_MS.fall + PHASE_MS.rain + PHASE_MS.reveal);
 
     return clearTimers;
-  }, [cascadeAnimating, cascadeSteps, clearTimers, schedule]);
+  }, [cascadeAnimating, cascadeSteps, clearTimers, grid, gridKey, schedule]);
 
   useEffect(() => {
-    if (animPhase === 'idle' && !cascadeAnimating) setDisplayGrid(grid);
-  }, [grid, animPhase, cascadeAnimating]);
+    if (animPhase === 'idle' && !cascadeAnimating && displayGridKeyRef.current !== gridKey) {
+      displayGridKeyRef.current = gridKey;
+      setDisplayGrid(grid);
+    }
+  }, [grid, gridKey, animPhase, cascadeAnimating]);
 
   useEffect(() => {
     pathRef.current = [];
@@ -152,7 +167,7 @@ export function LetterGrid({
     setPath([]);
     setIsDragging(false);
     setSelectionStatus('selecting');
-  }, [displayGrid, cascadeAnimating, animPhase]);
+  }, [gridKey, cascadeAnimating, animPhase]);
 
   const steps = stepsRef.current ?? cascadeSteps;
   const foundKeys = useMemo(
