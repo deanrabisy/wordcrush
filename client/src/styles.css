@@ -39,8 +39,8 @@ button, input { font: inherit; }
 .lobby-brand { justify-content: center; }
 .brand-logo-full {
   display: block;
-  width: min(270px, 100%);
-  max-height: min(260px, 34dvh);
+  width: min(305px, 100%);
+  max-height: min(292px, 38dvh);
   object-fit: contain;
   margin: -10px auto -18px;
 }
@@ -143,7 +143,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .game-layout { grid-template-columns: 1fr; align-items: start; }
   .side-panel { align-self: auto; }
   .brand-logo { width: 64px; height: 64px; }
-  .brand-logo-full { width: min(230px, 100%); max-height: 220px; }
+  .brand-logo-full { width: min(255px, 100%); max-height: 245px; }
   .found-word-burst { font-size: 1.1rem; padding: 8px 18px; }
   .target-header { flex-direction: column; }
   .room-code { font-size: 1.95rem; }
@@ -153,7 +153,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (max-height: 720px) {
   .app:not(.game) { padding-block: 8px; }
   .lobby { padding: 16px; gap: 10px; }
-  .brand-logo-full { width: min(220px, 100%); max-height: 190px; margin-bottom: -16px; }
+  .brand-logo-full { width: min(240px, 100%); max-height: 205px; margin-bottom: -16px; }
   .subtitle, .hint, label { font-size: 0.9rem; }
   input { padding: 10px 12px; }
   button { min-height: 42px; padding: 10px 14px; }
