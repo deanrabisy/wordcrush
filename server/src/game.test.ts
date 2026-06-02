@@ -45,15 +45,15 @@ describe('validator', () => {
 });
 
 describe('wordScheduler', () => {
-  it('defers unfound sibling and fills from unused first', () => {
+  it('keeps the unfound sibling active and adds one fresh word', () => {
     const pools = createInitialPools(getInitialUnusedWords());
     const active = getInitialActiveWords();
     const { nextActive, deferredWord } = handleWordFound(pools, active, active[0]);
 
-    expect(deferredWord).toBe(active[1]);
+    expect(deferredWord).toBeNull();
     expect(pools.found.has(active[0])).toBe(true);
-    expect(nextActive).toEqual(['BIG', 'SMALL']);
-    expect(pools.deferred).toEqual([active[1]]);
+    expect(nextActive).toEqual([active[1], 'BIG']);
+    expect(pools.deferred).toEqual([]);
   });
 
   it('returns deferred words once unused is empty', () => {

@@ -32,6 +32,23 @@ function refillGrid(grid: string[][]): void {
   }
 }
 
+function expandBlastPath(grid: string[][], foundPath: CellCoord[], radius = 2): CellCoord[] {
+  const cells = new Map<string, CellCoord>();
+  const rows = grid.length;
+  const cols = grid[0]?.length ?? 0;
+
+  for (const center of foundPath) {
+    for (let row = center.row - radius; row <= center.row + radius; row++) {
+      for (let col = center.col - radius; col <= center.col + radius; col++) {
+        if (row < 0 || col < 0 || row >= rows || col >= cols) continue;
+        cells.set(`${row},${col}`, { row, col });
+      }
+    }
+  }
+
+  return [...cells.values()];
+}
+
 export type CascadeResult = CascadeSteps;
 
 export function cascadeAfterFind(
@@ -42,8 +59,9 @@ export function cascadeAfterFind(
 ): CascadeResult {
   const fromGrid = cloneGrid(grid);
   const afterRemove = cloneGrid(grid);
+  const blastPath = expandBlastPath(grid, foundPath);
 
-  for (const { row, col } of foundPath) {
+  for (const { row, col } of blastPath) {
     afterRemove[row][col] = '';
   }
 
@@ -61,7 +79,7 @@ export function cascadeAfterFind(
     afterGravity,
     afterRefill,
     finalGrid,
-    foundPath,
+    foundPath: blastPath,
     foundWord,
   };
 }

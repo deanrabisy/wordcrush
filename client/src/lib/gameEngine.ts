@@ -132,6 +132,21 @@ function refillGrid(grid: string[][]): void {
   }
 }
 
+function expandBlastPath(grid: string[][], foundPath: CellCoord[], radius = 2): CellCoord[] {
+  const cells = new Map<string, CellCoord>();
+  const rows = grid.length;
+  const cols = grid[0]?.length ?? 0;
+  for (const center of foundPath) {
+    for (let row = center.row - radius; row <= center.row + radius; row++) {
+      for (let col = center.col - radius; col <= center.col + radius; col++) {
+        if (row < 0 || col < 0 || row >= rows || col >= cols) continue;
+        cells.set(row + ',' + col, { row, col });
+      }
+    }
+  }
+  return [...cells.values()];
+}
+
 function cascadeAfterFind(
   grid: string[][],
   foundPath: CellCoord[],
@@ -140,13 +155,14 @@ function cascadeAfterFind(
 ): NonNullable<PublicGameState['cascadeSteps']> {
   const fromGrid = cloneGrid(grid);
   const afterRemove = cloneGrid(grid);
-  for (const { row, col } of foundPath) afterRemove[row][col] = '';
+  const blastPath = expandBlastPath(grid, foundPath);
+  for (const { row, col } of blastPath) afterRemove[row][col] = '';
   const afterGravity = cloneGrid(afterRemove);
   applyGravity(afterGravity);
   const afterRefill = cloneGrid(afterGravity);
   refillGrid(afterRefill);
   const finalGrid = nextActiveWords ? generateGrid(nextActiveWords) : afterRefill;
-  return { fromGrid, afterRemove, afterGravity, afterRefill, finalGrid, foundPath, foundWord };
+  return { fromGrid, afterRemove, afterGravity, afterRefill, finalGrid, foundPath: blastPath, foundWord };
 }
 
 function pathToWord(grid: string[][], path: CellCoord[]): string {
@@ -204,17 +220,14 @@ function createInitialPools(unused: string[]): WordPools {
 
 function handleWordFound(pools: WordPools, activeWords: string[], foundWord: string): { nextActive: string[] | null; deferredWord: string | null } {
   pools.found.add(foundWord);
-  const sibling = activeWords.find((word) => word !== foundWord);
-  const deferredWord = sibling && !pools.found.has(sibling) ? sibling : null;
-  if (deferredWord) pools.deferred.push(deferredWord);
-  const next: string[] = [];
+  const next = activeWords.filter((word) => word !== foundWord && !pools.found.has(word));
   while (next.length < 2) {
     if (pools.unused.length > 0) next.push(pools.unused.shift()!);
     else if (pools.deferred.length > 0) next.push(pools.deferred.shift()!);
     else break;
   }
   const nextActive = next.length === 0 ? null : next;
-  return { nextActive, deferredWord };
+  return { nextActive, deferredWord: null };
 }
 
 function normalizePlayers(players: unknown): [Player | null, Player | null] {

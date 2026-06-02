@@ -47,9 +47,15 @@ export function handleWordFound(
   foundWord: string,
 ): { nextActive: string[] | null; deferredWord: string | null } {
   markFound(pools, foundWord);
-  const deferredWord = deferUnfoundSibling(activeWords, foundWord, pools);
-  const nextActive = fillActiveWords(pools);
-  return { nextActive, deferredWord };
+  const nextActive = activeWords.filter((word) => word !== foundWord && !pools.found.has(word));
+
+  while (nextActive.length < 2) {
+    if (pools.unused.length > 0) nextActive.push(pools.unused.shift()!);
+    else if (pools.deferred.length > 0) nextActive.push(pools.deferred.shift()!);
+    else break;
+  }
+
+  return { nextActive: nextActive.length === 0 ? null : nextActive, deferredWord: null };
 }
 
 export function isGameComplete(pools: WordPools, totalWords: number): boolean {
