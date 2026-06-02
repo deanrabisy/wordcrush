@@ -35,13 +35,21 @@ export type GameEvent = {
   deferredWord?: string;
 };
 
+export type SelectionStatus = 'selecting' | 'valid' | 'invalid';
+
+export type SelectionPreview = {
+  path: CellCoord[];
+  status: SelectionStatus;
+  updatedAt: number;
+};
+
 export type PublicGameState = {
   roomCode: string;
   players: [Player | null, Player | null];
   scores: Record<string, number>;
   wordsFoundCount: number;
   activeWords: string[];
-  selections?: Record<string, { path: CellCoord[]; updatedAt: number }>;
+  selections?: Record<string, SelectionPreview>;
   unusedCount: number;
   deferredWords: string[];
   foundWords: string[];

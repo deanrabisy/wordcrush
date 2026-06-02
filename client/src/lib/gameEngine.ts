@@ -223,6 +223,18 @@ function normalizePlayers(players: unknown): [Player | null, Player | null] {
   return [keyed?.['0'] ?? null, keyed?.['1'] ?? null];
 }
 
+function normalizeSelections(selections: FirebaseGameState['selections']): NonNullable<FirebaseGameState['selections']> {
+  const normalized: NonNullable<FirebaseGameState['selections']> = {};
+  for (const [playerId, selection] of Object.entries(selections ?? {})) {
+    normalized[playerId] = {
+      path: selection?.path ?? [],
+      status: selection?.status ?? 'selecting',
+      updatedAt: selection?.updatedAt ?? 0,
+    };
+  }
+  return normalized;
+}
+
 export function normalizeRoomState(state: FirebaseGameState): FirebaseGameState {
   return {
     ...state,
@@ -231,7 +243,7 @@ export function normalizeRoomState(state: FirebaseGameState): FirebaseGameState 
     playerSlots: state.playerSlots ?? {},
     pools: { unused: state.pools?.unused ?? [], deferred: state.pools?.deferred ?? [], found: state.pools?.found ?? [] },
     activeWords: [...(state.activeWords ?? [])],
-    selections: state.selections ?? {},
+    selections: normalizeSelections(state.selections),
     grid: state.grid ?? [],
     countdown: state.countdown ?? null,
     winnerId: state.winnerId ?? null,

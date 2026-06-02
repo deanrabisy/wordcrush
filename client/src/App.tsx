@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { SelectionStatus } from '@word-crush-duel/shared';
 import { GameOver } from './components/GameOver';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
@@ -45,9 +46,9 @@ export default function App() {
   );
 
   const handlePreviewSelection = useCallback(
-    (path: Parameters<typeof previewSelection>[1]) => {
+    (path: Parameters<typeof previewSelection>[1], status?: SelectionStatus) => {
       if (!gameState) return;
-      previewSelection(gameState.roomCode, path);
+      previewSelection(gameState.roomCode, path, status);
     },
     [gameState, previewSelection],
   );
@@ -73,7 +74,7 @@ export default function App() {
     gameState.status === 'countdown' ||
     gameState.status === 'paused';
   const isFinished = gameState.status === 'finished';
-  const opponentPath = opponent ? gameState.selections?.[opponent.id]?.path ?? [] : [];
+  const opponentSelection = opponent ? gameState.selections?.[opponent.id] ?? null : null;
   const toggleSound = () => {
     setSoundMuted((current) => {
       const next = !current;
@@ -147,7 +148,7 @@ export default function App() {
           <LetterGrid
             grid={gameState.grid}
             activeWords={gameState.activeWords}
-            opponentPath={opponentPath}
+            opponentSelection={opponentSelection}
             disabled={
               gameState.status !== 'playing' ||
               gameState.resolving ||

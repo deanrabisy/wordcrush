@@ -1,4 +1,4 @@
-import { TOTAL_WORDS, type CellCoord, type PublicGameState } from '@word-crush-duel/shared';
+import { TOTAL_WORDS, type CellCoord, type PublicGameState, type SelectionStatus } from '@word-crush-duel/shared';
 import { child, get, onValue, ref, runTransaction, set } from 'firebase/database';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getFirebaseDatabase, firebaseConfigured } from '../lib/firebase';
@@ -148,11 +148,11 @@ export function useGameSocket() {
   );
 
   const previewSelection = useCallback(
-    async (roomCode: string, path: CellCoord[]) => {
+    async (roomCode: string, path: CellCoord[], status: SelectionStatus = 'selecting') => {
       if (!firebaseConfigured) return;
       const db = getFirebaseDatabase();
       const selectionRef = ref(db, roomPath(roomCode) + '/selections/' + playerId);
-      await set(selectionRef, { path, updatedAt: Date.now() });
+      await set(selectionRef, { path, status, updatedAt: Date.now() });
     },
     [playerId],
   );

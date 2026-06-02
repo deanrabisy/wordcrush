@@ -98,6 +98,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .grid-cell.selected { background: rgba(217, 200, 108, 0.32); border-color: var(--gold); transform: scale(1.06); box-shadow: 0 0 0 4px rgba(217, 200, 108, 0.24); }
 .grid-cell.opponent-selected { background: rgba(10, 166, 173, 0.2); border-color: var(--primary); box-shadow: inset 0 0 0 3px rgba(10, 166, 173, 0.18); }
 .grid-cell.selected.opponent-selected { background: linear-gradient(135deg, rgba(217, 200, 108, 0.42), rgba(10, 166, 173, 0.28)); }
+.grid-cell.selection-invalid, .grid-cell.opponent-invalid { background: rgba(230, 78, 78, 0.22); border-color: #d64242; box-shadow: 0 0 0 4px rgba(214, 66, 66, 0.18); animation: invalidTap 0.32s ease; }
+.grid-cell.selection-valid, .grid-cell.opponent-valid { background: rgba(32, 196, 180, 0.34); border-color: var(--accent); box-shadow: 0 0 0 5px rgba(32, 196, 180, 0.2), 0 0 20px rgba(32, 196, 180, 0.28); animation: validTap 0.38s ease; }
 .grid-cell.celebrating { animation: cellCelebrate 0.2s ease infinite alternate; z-index: 3; border-color: var(--gold); }
 .grid-cell.exploding { animation: cellExplode 0.48s cubic-bezier(0.36, 0, 0.66, -0.56) forwards; z-index: 4; }
 .grid-cell.found-slot { background: transparent; border-color: transparent; }
@@ -114,8 +116,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   position: fixed;
   right: 14px;
   bottom: 10px;
-  width: clamp(82px, 10vw, 132px);
-  height: auto;
+  width: clamp(74px, 8.6vw, 112px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 50%;
+  background: white;
+  padding: 8px;
+  box-shadow: 0 10px 28px rgba(7, 56, 74, 0.16);
   opacity: 0.82;
   pointer-events: none;
 }
@@ -133,6 +140,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @keyframes gridGlow { 0% { box-shadow: var(--shadow); } 40% { box-shadow: 0 0 48px rgba(0, 112, 144, 0.3); } 100% { box-shadow: var(--shadow); } }
 @keyframes gridReveal { 0% { filter: brightness(1.08); } 100% { filter: brightness(1); } }
 @keyframes revealFlash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+@keyframes invalidTap { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 75% { transform: translateX(-2px); } }
+@keyframes validTap { 0% { transform: scale(1); } 55% { transform: scale(1.12); } 100% { transform: scale(1.04); } }
 
 @media (max-width: 640px) {
   body { overflow: auto; }

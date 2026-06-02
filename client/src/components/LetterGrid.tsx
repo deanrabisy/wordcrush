@@ -1,4 +1,4 @@
-import type { CascadeSteps, CellCoord } from '@word-crush-duel/shared';
+import type { CascadeSteps, CellCoord, SelectionPreview, SelectionStatus } from '@word-crush-duel/shared';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   buildParticles,
@@ -11,11 +11,11 @@ import {
 type LetterGridProps = {
   grid: string[][];
   activeWords: string[];
-  opponentPath: CellCoord[];
+  opponentSelection: SelectionPreview | null;
   disabled: boolean;
   cascadeAnimating: boolean;
   cascadeSteps: CascadeSteps | null;
-  onPreviewSelection: (path: CellCoord[]) => void;
+  onPreviewSelection: (path: CellCoord[], status?: SelectionStatus) => void;
   onSubmit: (path: CellCoord[], word: string) => void;
 };
 
@@ -76,7 +76,7 @@ function gridForPhase(phase: AnimPhase, steps: CascadeSteps): string[][] {
 export function LetterGrid({
   grid,
   activeWords,
-  opponentPath,
+  opponentSelection,
   disabled,
   cascadeAnimating,
   cascadeSteps,
@@ -88,10 +88,12 @@ export function LetterGrid({
   const [displayGrid, setDisplayGrid] = useState(grid);
   const [animPhase, setAnimPhase] = useState<AnimPhase>('idle');
   const [foundLabel, setFoundLabel] = useState<string | null>(null);
+  const [selectionStatus, setSelectionStatus] = useState<SelectionStatus>('selecting');
   const timersRef = useRef<number[]>([]);
   const stepsRef = useRef<CascadeSteps | null>(null);
   const pathRef = useRef<CellCoord[]>([]);
   const draggingRef = useRef(false);
+  const clearSelectionTimerRef = useRef<number | null>(null);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
@@ -145,8 +147,11 @@ export function LetterGrid({
   useEffect(() => {
     pathRef.current = [];
     draggingRef.current = false;
+    if (clearSelectionTimerRef.current) window.clearTimeout(clearSelectionTimerRef.current);
+    clearSelectionTimerRef.current = null;
     setPath([]);
     setIsDragging(false);
+    setSelectionStatus('selecting');
   }, [displayGrid, cascadeAnimating, animPhase]);
 
   const steps = stepsRef.current ?? cascadeSteps;
@@ -184,12 +189,17 @@ export function LetterGrid({
   }, [steps]);
 
   const pathKeys = useMemo(() => new Set(path.map(({ row, col }) => cellKey(row, col))), [path]);
+  const opponentPath = opponentSelection?.path ?? [];
+  const opponentStatus = opponentSelection?.status ?? 'selecting';
   const opponentPathKeys = useMemo(() => new Set(opponentPath.map(({ row, col }) => cellKey(row, col))), [opponentPath]);
 
-  const setSelectionPath = useCallback((next: CellCoord[]) => {
+  const setSelectionPath = useCallback((next: CellCoord[], status: SelectionStatus = 'selecting') => {
+    if (clearSelectionTimerRef.current) window.clearTimeout(clearSelectionTimerRef.current);
+    clearSelectionTimerRef.current = null;
     pathRef.current = next;
+    setSelectionStatus(status);
     setPath(next);
-    onPreviewSelection(next);
+    onPreviewSelection(next, status);
   }, [onPreviewSelection]);
 
   const addCell = useCallback((row: number, col: number) => {
@@ -219,18 +229,23 @@ export function LetterGrid({
   const finishSelection = useCallback(() => {
     const current = pathRef.current;
     if (current.length === 0) return;
+    draggingRef.current = false;
+    setIsDragging(false);
     if (!isForwardPath(current)) {
-      setSelectionPath([]);
-      draggingRef.current = false;
-      setIsDragging(false);
+      setSelectionPath(current, 'invalid');
+      clearSelectionTimerRef.current = window.setTimeout(() => setSelectionPath([], 'selecting'), 650);
       return;
     }
     const spelled = pathToWord(displayGrid, current);
     const match = matchActiveWord(spelled, activeWords);
-    if (match) onSubmit(current, match);
-    window.setTimeout(() => setSelectionPath([]), match ? 0 : 160);
-    draggingRef.current = false;
-    setIsDragging(false);
+    if (match) {
+      setSelectionPath(current, 'valid');
+      onSubmit(current, match);
+      clearSelectionTimerRef.current = window.setTimeout(() => setSelectionPath([], 'selecting'), 450);
+      return;
+    }
+    setSelectionPath(current, 'invalid');
+    clearSelectionTimerRef.current = window.setTimeout(() => setSelectionPath([], 'selecting'), 650);
   }, [activeWords, displayGrid, onSubmit, setSelectionPath]);
 
   const cancelSelection = useCallback(() => {
@@ -244,7 +259,7 @@ export function LetterGrid({
     const next = [{ row, col }];
     draggingRef.current = true;
     setIsDragging(true);
-    setSelectionPath(next);
+    setSelectionPath(next, 'selecting');
   };
 
   const handlePointerEnter = (row: number, col: number) => {
@@ -297,6 +312,10 @@ export function LetterGrid({
               const key = cellKey(rowIndex, colIndex);
               const selected = pathKeys.has(key);
               const opponentSelected = opponentPathKeys.has(key);
+              const selectedInvalid = selected && selectionStatus === 'invalid';
+              const selectedValid = selected && selectionStatus === 'valid';
+              const opponentInvalid = opponentSelected && opponentStatus === 'invalid';
+              const opponentValid = opponentSelected && opponentStatus === 'valid';
               const isFound = foundKeys.has(key);
               const fallDy = fallOffsets.get(key) ?? 0;
               const isSpawn = spawnKeys.has(key);
@@ -335,7 +354,11 @@ export function LetterGrid({
                   className={[
                     'grid-cell',
                     selected ? 'selected' : '',
+                    selectedInvalid ? 'selection-invalid' : '',
+                    selectedValid ? 'selection-valid' : '',
                     opponentSelected ? 'opponent-selected' : '',
+                    opponentInvalid ? 'opponent-invalid' : '',
+                    opponentValid ? 'opponent-valid' : '',
                     celebrating ? 'celebrating' : '',
                     exploding ? 'exploding' : '',
                     falling ? 'falling' : '',
