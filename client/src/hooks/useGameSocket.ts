@@ -17,10 +17,10 @@ import { getRoomCodeFromUrl } from '../lib/inviteLink';
 
 function getStoredPlayerId(): string {
   const key = 'word-crush-player-id';
-  const existing = window.localStorage.getItem(key);
+  const existing = window.sessionStorage.getItem(key);
   if (existing) return existing;
   const generated = window.crypto?.randomUUID?.() ?? 'player-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-  window.localStorage.setItem(key, generated);
+  window.sessionStorage.setItem(key, generated);
   return generated;
 }
 
@@ -100,8 +100,15 @@ export function useGameSocket() {
       const code = roomCode.trim().toUpperCase();
       if (!code) return;
       const db = getFirebaseDatabase();
+      const roomRef = ref(db, roomPath(code));
+      const existingRoom = await get(roomRef);
+      if (!existingRoom.exists()) {
+        setError('Room not found');
+        return;
+      }
+
       let transactionError: string | null = null;
-      const result = await runTransaction(ref(db, roomPath(code)), (current: FirebaseGameState | null) => {
+      const result = await runTransaction(roomRef, (current: FirebaseGameState | null) => {
         if (!current) {
           transactionError = 'Room not found';
           return current;
