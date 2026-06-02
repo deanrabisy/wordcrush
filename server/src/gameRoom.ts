@@ -345,14 +345,15 @@ export class GameRoom {
     }
 
     const player = this.state.players.find((p) => p?.id === playerId);
-    this.state.lastEvent = {
+    const lastEvent: GameEvent = {
       type: 'word_found',
       playerId,
       word: foundWord,
       points,
       message: `${player?.name ?? 'Player'} found ${foundWord}! (+${points})`,
-      deferredWord: deferredWord ?? undefined,
     };
+    if (deferredWord) lastEvent.deferredWord = deferredWord;
+    this.state.lastEvent = lastEvent;
 
     this.emit();
 

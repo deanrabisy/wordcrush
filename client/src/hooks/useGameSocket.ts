@@ -133,16 +133,20 @@ export function useGameSocket() {
       if (!firebaseConfigured) return;
       const db = getFirebaseDatabase();
       let transactionError: string | null = null;
-      await runTransaction(ref(db, roomPath(roomCode)), (current: FirebaseGameState | null) => {
-        if (!current) {
-          transactionError = 'Room not found';
-          return current;
-        }
-        const next = submitSelectionState(current, playerId, path, word);
-        transactionError = next.error;
-        return next.state;
-      });
-      if (transactionError) setError(transactionError);
+      try {
+        await runTransaction(ref(db, roomPath(roomCode)), (current: FirebaseGameState | null) => {
+          if (!current) {
+            transactionError = 'Room not found';
+            return current;
+          }
+          const next = submitSelectionState(current, playerId, path, word);
+          transactionError = next.error;
+          return next.state;
+        });
+        if (transactionError) setError(transactionError);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not submit selection');
+      }
     },
     [playerId],
   );

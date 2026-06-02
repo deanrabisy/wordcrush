@@ -9,6 +9,7 @@ import {
   getInitialActiveWords,
   getInitialUnusedWords,
   type CellCoord,
+  type GameEvent,
   type Player,
   type PublicGameState,
   type WordPools,
@@ -385,6 +386,14 @@ export function submitSelectionState(current: FirebaseGameState, playerId: strin
   const gameComplete = pools.found.size >= TOTAL_WORDS;
   const cascadeSteps = cascadeAfterFind(state.grid, path, foundWord, gameComplete ? null : nextActive);
   const player = state.players.find((candidate) => candidate?.id === playerId);
+  const lastEvent: GameEvent = {
+    type: 'word_found',
+    playerId,
+    word: foundWord,
+    points,
+    message: (player?.name ?? 'Player') + ' found ' + foundWord + '! (+' + points + ')',
+  };
+  if (deferredWord) lastEvent.deferredWord = deferredWord;
   return {
     state: {
       ...state,
@@ -399,7 +408,7 @@ export function submitSelectionState(current: FirebaseGameState, playerId: strin
       lastFoundWord: foundWord,
       cascadeSteps,
       selections: {},
-      lastEvent: { type: 'word_found', playerId, word: foundWord, points, message: (player?.name ?? 'Player') + ' found ' + foundWord + '! (+' + points + ')', deferredWord: deferredWord ?? undefined },
+      lastEvent,
       updatedAt: now,
     },
     error: null,
