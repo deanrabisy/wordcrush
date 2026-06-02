@@ -90,6 +90,8 @@ export function LetterGrid({
   const [foundLabel, setFoundLabel] = useState<string | null>(null);
   const timersRef = useRef<number[]>([]);
   const stepsRef = useRef<CascadeSteps | null>(null);
+  const pathRef = useRef<CellCoord[]>([]);
+  const draggingRef = useRef(false);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
@@ -141,6 +143,8 @@ export function LetterGrid({
   }, [grid, animPhase, cascadeAnimating]);
 
   useEffect(() => {
+    pathRef.current = [];
+    draggingRef.current = false;
     setPath([]);
     setIsDragging(false);
   }, [displayGrid, cascadeAnimating, animPhase]);
@@ -182,38 +186,65 @@ export function LetterGrid({
   const pathKeys = useMemo(() => new Set(path.map(({ row, col }) => cellKey(row, col))), [path]);
   const opponentPathKeys = useMemo(() => new Set(opponentPath.map(({ row, col }) => cellKey(row, col))), [opponentPath]);
 
-  const addCell = useCallback((row: number, col: number) => {
-    setPath((current) => {
-      if (current.some((cell) => cell.row === row && cell.col === col)) return current;
-      const next = [...current, { row, col }];
-      if (!isContiguous(next)) return current;
-      onPreviewSelection(next);
-      return next;
-    });
+  const setSelectionPath = useCallback((next: CellCoord[]) => {
+    pathRef.current = next;
+    setPath(next);
+    onPreviewSelection(next);
   }, [onPreviewSelection]);
 
+  const addCell = useCallback((row: number, col: number) => {
+    const current = pathRef.current;
+    if (current.some((cell) => cell.row === row && cell.col === col)) return;
+    const next = [...current, { row, col }];
+    if (!isContiguous(next)) return;
+    setSelectionPath(next);
+  }, [setSelectionPath]);
+
+  const cellFromPoint = useCallback((clientX: number, clientY: number): CellCoord | null => {
+    const element = document.elementFromPoint(clientX, clientY);
+    const cell = element?.closest<HTMLButtonElement>('[data-grid-cell="true"]');
+    if (!cell) return null;
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    if (!Number.isInteger(row) || !Number.isInteger(col)) return null;
+    return { row, col };
+  }, []);
+
+  const addCellFromPoint = useCallback((clientX: number, clientY: number) => {
+    if (!draggingRef.current || disabled || animPhase !== 'idle') return;
+    const cell = cellFromPoint(clientX, clientY);
+    if (cell) addCell(cell.row, cell.col);
+  }, [addCell, animPhase, cellFromPoint, disabled]);
+
   const finishSelection = useCallback(() => {
-    if (path.length === 0) return;
-    if (!isForwardPath(path)) {
-      setPath([]);
+    const current = pathRef.current;
+    if (current.length === 0) return;
+    if (!isForwardPath(current)) {
+      setSelectionPath([]);
+      draggingRef.current = false;
       setIsDragging(false);
-      onPreviewSelection([]);
       return;
     }
-    const spelled = pathToWord(displayGrid, path);
+    const spelled = pathToWord(displayGrid, current);
     const match = matchActiveWord(spelled, activeWords);
-    if (match) onSubmit(path, match);
-    setPath([]);
+    if (match) onSubmit(current, match);
+    window.setTimeout(() => setSelectionPath([]), match ? 0 : 160);
+    draggingRef.current = false;
     setIsDragging(false);
-    onPreviewSelection([]);
-  }, [activeWords, displayGrid, onPreviewSelection, onSubmit, path]);
+  }, [activeWords, displayGrid, onSubmit, setSelectionPath]);
+
+  const cancelSelection = useCallback(() => {
+    draggingRef.current = false;
+    setIsDragging(false);
+    setSelectionPath([]);
+  }, [setSelectionPath]);
 
   const handlePointerDown = (row: number, col: number) => {
     if (disabled || animPhase !== 'idle') return;
     const next = [{ row, col }];
+    draggingRef.current = true;
     setIsDragging(true);
-    setPath(next);
-    onPreviewSelection(next);
+    setSelectionPath(next);
   };
 
   const handlePointerEnter = (row: number, col: number) => {
@@ -222,12 +253,31 @@ export function LetterGrid({
   };
 
   useEffect(() => {
-    const up = () => {
-      if (isDragging) finishSelection();
+    const move = (event: PointerEvent) => {
+      if (draggingRef.current) {
+        event.preventDefault();
+        addCellFromPoint(event.clientX, event.clientY);
+      }
     };
+    const up = (event: PointerEvent) => {
+      if (draggingRef.current) {
+        event.preventDefault();
+        addCellFromPoint(event.clientX, event.clientY);
+        finishSelection();
+      }
+    };
+    const cancel = () => {
+      if (draggingRef.current) cancelSelection();
+    };
+    window.addEventListener('pointermove', move, { passive: false });
     window.addEventListener('pointerup', up);
-    return () => window.removeEventListener('pointerup', up);
-  }, [isDragging, finishSelection]);
+    window.addEventListener('pointercancel', cancel);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+    };
+  }, [addCellFromPoint, cancelSelection, finishSelection]);
 
   return (
     <div className={`letter-grid-wrap phase-${animPhase}`}>
@@ -279,6 +329,9 @@ export function LetterGrid({
                 <button
                   key={key}
                   type="button"
+                  data-grid-cell="true"
+                  data-row={rowIndex}
+                  data-col={colIndex}
                   className={[
                     'grid-cell',
                     selected ? 'selected' : '',
