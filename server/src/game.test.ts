@@ -74,7 +74,7 @@ describe('wordScheduler', () => {
   it('simulates a full 10-find trace without losing words', () => {
     const all = getAllWords();
     let pools = createInitialPools(getInitialUnusedWords());
-    let active = getInitialActiveWords();
+    let active: string[] = getInitialActiveWords();
     const foundOrder: string[] = [];
 
     while (!isGameComplete(pools, 10)) {
@@ -88,5 +88,14 @@ describe('wordScheduler', () => {
     expect(foundOrder.length).toBe(10);
     expect(new Set(foundOrder).size).toBe(10);
     expect(all.every((word) => pools.found.has(word))).toBe(true);
+  });
+
+  it('returns a single final active word instead of duplicating it', () => {
+    const pools = createInitialPools([]);
+    pools.deferred = ['COLD'];
+    pools.found = new Set(['HOT', 'BIG', 'SMALL', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'IN', 'OUT']);
+
+    const next = fillActiveWords(pools);
+    expect(next).toEqual(['COLD']);
   });
 });

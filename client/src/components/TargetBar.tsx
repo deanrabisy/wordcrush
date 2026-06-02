@@ -1,7 +1,7 @@
 import type { PublicGameState } from '@word-crush-duel/shared';
 
 type TargetBarProps = {
-  activeWords: [string, string];
+  activeWords: string[];
   wordsFoundCount: number;
   totalWords: number;
   deferredWords: string[];

@@ -1,13 +1,15 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { GameOver } from './components/GameOver';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
 import { Scoreboard, TargetBar } from './components/TargetBar';
 import { useGameSocket } from './hooks/useGameSocket';
+import { useSoundEffects } from './hooks/useSoundEffects';
 
 const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
 
 export default function App() {
+  const [soundMuted, setSoundMuted] = useState(() => window.localStorage.getItem('word-crush-muted') === 'true');
   const {
     connected,
     gameState,
@@ -18,10 +20,13 @@ export default function App() {
     createRoom,
     joinRoom,
     submitSelection,
+    previewSelection,
     rematch,
+    resetGame,
     totalWords,
     inviteRoomCode,
   } = useGameSocket();
+  useSoundEffects(gameState?.lastEvent, soundMuted);
 
   const handleSubmit = useCallback(
     (path: Parameters<typeof submitSelection>[1], word: string) => {
@@ -29,6 +34,14 @@ export default function App() {
       submitSelection(gameState.roomCode, path, word);
     },
     [gameState, submitSelection],
+  );
+
+  const handlePreviewSelection = useCallback(
+    (path: Parameters<typeof previewSelection>[1]) => {
+      if (!gameState) return;
+      previewSelection(gameState.roomCode, path);
+    },
+    [gameState, previewSelection],
   );
 
   if (!gameState) {
@@ -52,6 +65,14 @@ export default function App() {
     gameState.status === 'countdown' ||
     gameState.status === 'paused';
   const isFinished = gameState.status === 'finished';
+  const opponentPath = opponent ? gameState.selections?.[opponent.id]?.path ?? [] : [];
+  const toggleSound = () => {
+    setSoundMuted((current) => {
+      const next = !current;
+      window.localStorage.setItem('word-crush-muted', String(next));
+      return next;
+    });
+  };
 
   if (inLobby) {
     return (
@@ -76,7 +97,15 @@ export default function App() {
           <img className="brand-logo" src={logoSrc} alt="Word Crush Duel logo" />
           <h1>Word Crush Duel</h1>
         </div>
-        <span className="room-pill">Room {gameState.roomCode}</span>
+        <div className="game-actions">
+          <span className="room-pill">Room {gameState.roomCode}</span>
+          <button type="button" className="secondary compact-button" onClick={resetGame}>
+            Reset
+          </button>
+          <button type="button" className="secondary compact-button" onClick={toggleSound}>
+            {soundMuted ? 'Sound off' : 'Sound on'}
+          </button>
+        </div>
       </header>
 
       {gameState.status === 'countdown' && gameState.countdown !== null && (
@@ -84,28 +113,24 @@ export default function App() {
       )}
 
       {gameState.status === 'paused' && (
-        <div className="pause-banner">Opponent disconnected — pausing…</div>
+        <div className="pause-banner">Opponent disconnected - pausing...</div>
       )}
 
       <div className="game-layout">
-        <Scoreboard
-          gameState={gameState}
-          playerId={playerId}
-          selfName={self?.name ?? 'You'}
-          opponentName={opponent?.name ?? 'Opponent'}
-        />
-
-        <TargetBar
-          activeWords={gameState.activeWords}
-          wordsFoundCount={gameState.wordsFoundCount}
-          totalWords={totalWords}
-          deferredWords={gameState.deferredWords}
-        />
+        <aside className="side-panel left-panel">
+          <Scoreboard
+            gameState={gameState}
+            playerId={playerId}
+            selfName={self?.name ?? 'You'}
+            opponentName={opponent?.name ?? 'Opponent'}
+          />
+        </aside>
 
         {isPlaying && (
           <LetterGrid
             grid={gameState.grid}
             activeWords={gameState.activeWords}
+            opponentPath={opponentPath}
             disabled={
               gameState.status !== 'playing' ||
               gameState.resolving ||
@@ -113,6 +138,7 @@ export default function App() {
             }
             cascadeAnimating={gameState.cascadeAnimating}
             cascadeSteps={gameState.cascadeSteps}
+            onPreviewSelection={handlePreviewSelection}
             onSubmit={handleSubmit}
           />
         )}
@@ -125,6 +151,15 @@ export default function App() {
             onRematch={rematch}
           />
         )}
+
+        <aside className="side-panel right-panel">
+          <TargetBar
+            activeWords={gameState.activeWords}
+            wordsFoundCount={gameState.wordsFoundCount}
+            totalWords={totalWords}
+            deferredWords={gameState.deferredWords}
+          />
+        </aside>
       </div>
     </main>
   );

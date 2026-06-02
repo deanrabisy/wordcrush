@@ -17,11 +17,12 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; }
+html, body, #root { min-height: 100%; }
+body { margin: 0; min-height: 100vh; overflow: hidden; }
 button, input { font: inherit; }
 
 .app { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-.app.game { place-items: start center; width: min(1040px, 100%); margin: 0 auto; }
+.app.game { width: 100%; height: 100dvh; min-height: 0; place-items: stretch; padding: clamp(10px, 1.8vmin, 18px); overflow: hidden; }
 .card { background: color-mix(in srgb, var(--panel) 92%, white); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
 .brand-lockup { display: flex; align-items: center; gap: 12px; }
 .brand-logo {
@@ -51,49 +52,55 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .waiting-box { text-align: center; display: grid; gap: 12px; }
 .room-code { font-size: 2.35rem; letter-spacing: 0.24em; font-weight: 900; color: var(--primary-dark); }
 
-.game-header { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; padding-top: 8px; }
+.game-header { width: min(1220px, 100%); margin: 0 auto clamp(8px, 1.4vmin, 14px); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.game-actions { display: flex; align-items: center; gap: 10px; }
 .room-pill { flex: 0 0 auto; padding: 8px 12px; border-radius: 999px; background: var(--panel-strong); border: 1px solid var(--line); color: var(--muted); font-weight: 800; }
-.game-layout { width: 100%; display: grid; gap: 16px; }
+.compact-button { min-height: 38px; padding: 8px 12px; }
+.game-layout { width: min(1220px, 100%); min-height: 0; margin: 0 auto; display: grid; grid-template-columns: minmax(170px, 230px) minmax(430px, 1fr) minmax(190px, 260px); align-items: center; justify-items: center; gap: clamp(10px, 1.5vmin, 18px); }
+.side-panel { width: 100%; align-self: stretch; display: flex; align-items: center; }
 .scoreboard, .target-bar { padding: 16px 18px; }
+.scoreboard, .target-bar { width: 100%; }
 .score-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
 .player-name.you { color: var(--primary-dark); }
 .score { font-weight: 900; font-size: 1.25rem; }
 .event-message { margin: 8px 0 0; font-weight: 700; }
-.target-header { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: var(--muted); font-weight: 700; }
+.target-header { display: grid; gap: 8px; margin-bottom: 12px; color: var(--muted); font-weight: 700; }
 .deferred-badge { padding: 4px 10px; border-radius: 999px; background: rgba(10, 166, 173, 0.13); color: var(--primary-dark); font-size: 0.85rem; }
-.target-words { display: flex; gap: 12px; flex-wrap: wrap; }
-.target-word { padding: 12px 18px; border-radius: 8px; background: var(--ink); color: white; font-size: 1.35rem; font-weight: 900; letter-spacing: 0.08em; }
+.target-words { display: grid; gap: 10px; }
+.target-word { padding: 12px 14px; border-radius: 8px; background: var(--ink); color: white; font-size: clamp(1rem, 2vmin, 1.28rem); font-weight: 900; letter-spacing: 0.08em; text-align: center; }
 
-.letter-grid-wrap { position: relative; width: 100%; display: flex; justify-content: center; }
-.found-word-burst { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); z-index: 10; padding: 10px 28px; border-radius: 999px; background: linear-gradient(135deg, var(--gold), var(--primary)); color: var(--ink); font-size: 1.5rem; font-weight: 900; letter-spacing: 0.12em; animation: wordBurst 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards; pointer-events: none; box-shadow: 0 8px 32px rgba(0, 112, 144, 0.28); }
-.letter-grid { position: relative; padding: 16px; overflow: visible; margin-inline: auto; background: var(--panel-strong); }
+.letter-grid-wrap { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; }
+.found-word-burst { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); z-index: 10; padding: 10px 28px; border-radius: 999px; background: linear-gradient(135deg, var(--gold), var(--primary)); color: var(--ink); font-size: clamp(1.1rem, 2.4vmin, 1.65rem); font-weight: 900; letter-spacing: 0.12em; animation: wordBurst 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards; pointer-events: none; box-shadow: 0 12px 36px rgba(0, 112, 144, 0.32); }
+.letter-grid { position: relative; padding: clamp(10px, 1.8vmin, 16px); overflow: visible; margin-inline: auto; background: var(--panel-strong); }
 .letter-grid.phase-celebrate { animation: gridPulse 0.2s ease; }
 .letter-grid.phase-explode { animation: gridShake 0.48s ease; }
 .letter-grid.phase-fall { animation: gridSettle 0.3s ease; }
 .letter-grid.phase-rain { animation: gridGlow 0.56s ease; }
 .letter-grid.phase-reveal { animation: gridReveal 0.54s ease; }
 .reveal-flash { position: absolute; inset: 0; border-radius: 8px; background: radial-gradient(circle, rgba(32, 196, 180, 0.24), transparent 70%); animation: revealFlash 0.54s ease forwards; pointer-events: none; z-index: 5; }
-.grid-row { display: flex; gap: 8px; justify-content: center; }
-.grid-row + .grid-row { margin-top: 8px; }
-.grid-cell { position: relative; width: 52px; height: 52px; border-radius: 8px; border: 1px solid var(--line); background: #eefbfb; color: var(--ink); font-weight: 900; font-size: 1.15rem; overflow: visible; transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
+.grid-row { display: flex; gap: clamp(5px, 1vmin, 8px); justify-content: center; }
+.grid-row + .grid-row { margin-top: clamp(5px, 1vmin, 8px); }
+.grid-cell { position: relative; width: clamp(34px, 7.1vmin, 52px); height: clamp(34px, 7.1vmin, 52px); border-radius: 8px; border: 1px solid var(--line); background: #eefbfb; color: var(--ink); font-weight: 900; font-size: clamp(0.9rem, 2.1vmin, 1.15rem); overflow: visible; transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
 .cell-letter { position: relative; z-index: 1; display: block; }
 .grid-cell.selected { background: rgba(217, 200, 108, 0.32); border-color: var(--gold); transform: scale(1.06); box-shadow: 0 0 0 4px rgba(217, 200, 108, 0.24); }
+.grid-cell.opponent-selected { background: rgba(10, 166, 173, 0.2); border-color: var(--primary); box-shadow: inset 0 0 0 3px rgba(10, 166, 173, 0.18); }
+.grid-cell.selected.opponent-selected { background: linear-gradient(135deg, rgba(217, 200, 108, 0.42), rgba(10, 166, 173, 0.28)); }
 .grid-cell.celebrating { animation: cellCelebrate 0.2s ease infinite alternate; z-index: 3; border-color: var(--gold); }
 .grid-cell.exploding { animation: cellExplode 0.48s cubic-bezier(0.36, 0, 0.66, -0.56) forwards; z-index: 4; }
 .grid-cell.found-slot { background: transparent; border-color: transparent; }
 .grid-cell.falling { animation: cellFall var(--fall-duration, 620ms) cubic-bezier(0.34, 1.4, 0.64, 1) backwards; }
 .grid-cell.raining { animation: cellRain var(--rain-duration, 560ms) cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
 .grid-cell.revealing { animation: cellReveal 0.45s ease backwards; }
-.particle { position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; border-radius: 50%; background: hsl(var(--hue, 45), 95%, 55%); pointer-events: none; animation: particleBurst 0.48s ease forwards; animation-delay: var(--delay, 0ms); }
+.particle { position: absolute; top: 50%; left: 50%; width: 9px; height: 9px; border-radius: 50%; background: hsl(var(--hue, 45), 95%, 55%); pointer-events: none; animation: particleBurst 0.56s ease forwards; animation-delay: var(--delay, 0ms); }
 
 .countdown-overlay, .pause-banner { width: 100%; text-align: center; padding: 16px; margin-bottom: 12px; border-radius: 8px; background: var(--ink); color: white; font-size: 1.4rem; font-weight: 900; }
 .countdown-overlay { font-size: 3rem; }
 .game-over { padding: 24px; text-align: center; display: grid; gap: 12px; }
 .game-over h2, .game-over p { margin: 0; }
 
-@keyframes wordBurst { 0% { transform: translateX(-50%) scale(0.3) translateY(20px); opacity: 0; } 50% { transform: translateX(-50%) scale(1.15) translateY(-8px); opacity: 1; } 100% { transform: translateX(-50%) scale(1) translateY(-16px); opacity: 0.9; } }
+@keyframes wordBurst { 0% { transform: translateX(-50%) scale(0.25) translateY(24px); opacity: 0; } 42% { transform: translateX(-50%) scale(1.22) translateY(-10px); opacity: 1; } 72% { transform: translateX(-50%) scale(0.96) translateY(-20px); opacity: 1; } 100% { transform: translateX(-50%) scale(1) translateY(-30px); opacity: 0; } }
 @keyframes cellCelebrate { from { transform: scale(1); box-shadow: 0 0 0 rgba(242, 184, 75, 0); } to { transform: scale(1.12); box-shadow: 0 0 20px rgba(217, 200, 108, 0.46); } }
-@keyframes cellExplode { 0% { transform: scale(1) rotate(0deg); opacity: 1; background: rgba(10, 166, 173, 0.36); } 35% { transform: scale(1.45) rotate(8deg); box-shadow: 0 0 28px 8px rgba(217, 200, 108, 0.4); } 100% { transform: scale(0) rotate(24deg); opacity: 0; } }
+@keyframes cellExplode { 0% { transform: scale(1) rotate(0deg); opacity: 1; background: rgba(10, 166, 173, 0.36); } 30% { transform: scale(1.55) rotate(8deg); box-shadow: 0 0 34px 10px rgba(217, 200, 108, 0.48); } 62% { transform: scale(0.82) rotate(-6deg); opacity: 0.9; } 100% { transform: scale(0) rotate(28deg); opacity: 0; } }
 @keyframes particleBurst { 0% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 100% { transform: translate(calc(-50% + var(--px)), calc(-50% + var(--py))) scale(0); opacity: 0; } }
 @keyframes cellFall { 0% { transform: translateY(calc(-1 * var(--fall-distance, 60px))); opacity: 0.85; } 75% { transform: translateY(4px); } 100% { transform: translateY(0); opacity: 1; } }
 @keyframes cellRain { 0% { transform: translateY(calc(-1 * (var(--fall-distance, 60px) + 80px))) scale(0.5); opacity: 0; } 65% { transform: translateY(6px) scale(1.08); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
@@ -106,12 +113,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @keyframes revealFlash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
 
 @media (max-width: 640px) {
+  body { overflow: auto; }
   .app { padding: 16px; }
+  .app.game { height: auto; min-height: 100dvh; overflow: visible; }
   .game-header { align-items: flex-start; flex-direction: column; }
+  .game-layout { grid-template-columns: 1fr; align-items: start; }
+  .side-panel { align-self: auto; }
   .brand-logo { width: 52px; height: 52px; }
-  .grid-cell { width: 38px; height: 38px; font-size: 0.95rem; }
-  .grid-row { gap: 5px; }
-  .grid-row + .grid-row { margin-top: 5px; }
   .found-word-burst { font-size: 1.1rem; padding: 8px 18px; }
   .target-header { flex-direction: column; }
   .room-code { font-size: 1.95rem; }

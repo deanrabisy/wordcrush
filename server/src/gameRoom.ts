@@ -35,7 +35,7 @@ type InternalGameState = {
   playerSlots: Map<string, number>;
   scores: Record<string, number>;
   wordsFoundCount: number;
-  activeWords: [string, string];
+  activeWords: string[];
   pools: WordPools;
   grid: string[][];
   status: PublicGameState['status'];
@@ -97,7 +97,7 @@ export class GameRoom {
       players: [...this.state.players],
       scores: { ...this.state.scores },
       wordsFoundCount: this.state.wordsFoundCount,
-      activeWords: [...this.state.activeWords] as [string, string],
+      activeWords: [...this.state.activeWords],
       unusedCount: this.state.pools.unused.length,
       deferredWords: [...this.state.pools.deferred],
       foundWords: [...this.state.pools.found],

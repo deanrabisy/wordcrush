@@ -38,7 +38,7 @@ export function cascadeAfterFind(
   grid: string[][],
   foundPath: CellCoord[],
   foundWord: string,
-  nextActiveWords: [string, string] | null,
+  nextActiveWords: string[] | null,
 ): CascadeResult {
   const fromGrid = cloneGrid(grid);
   const afterRemove = cloneGrid(grid);
@@ -66,6 +66,6 @@ export function cascadeAfterFind(
   };
 }
 
-export function regenerateGrid(activeWords: [string, string]): string[][] {
+export function regenerateGrid(activeWords: string[]): string[][] {
   return generateGrid(activeWords);
 }

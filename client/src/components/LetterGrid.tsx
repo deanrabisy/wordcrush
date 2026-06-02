@@ -10,10 +10,12 @@ import {
 
 type LetterGridProps = {
   grid: string[][];
-  activeWords: [string, string];
+  activeWords: string[];
+  opponentPath: CellCoord[];
   disabled: boolean;
   cascadeAnimating: boolean;
   cascadeSteps: CascadeSteps | null;
+  onPreviewSelection: (path: CellCoord[]) => void;
   onSubmit: (path: CellCoord[], word: string) => void;
 };
 
@@ -50,7 +52,7 @@ function isForwardPath(path: CellCoord[]): boolean {
   return dr >= 0 && dc >= 0 && dr + dc > 0;
 }
 
-function matchActiveWord(text: string, activeWords: [string, string]): string | null {
+function matchActiveWord(text: string, activeWords: string[]): string | null {
   for (const word of activeWords) if (text === word) return word;
   return null;
 }
@@ -74,9 +76,11 @@ function gridForPhase(phase: AnimPhase, steps: CascadeSteps): string[][] {
 export function LetterGrid({
   grid,
   activeWords,
+  opponentPath,
   disabled,
   cascadeAnimating,
   cascadeSteps,
+  onPreviewSelection,
   onSubmit,
 }: LetterGridProps) {
   const [path, setPath] = useState<CellCoord[]>([]);
@@ -176,20 +180,24 @@ export function LetterGrid({
   }, [steps]);
 
   const pathKeys = useMemo(() => new Set(path.map(({ row, col }) => cellKey(row, col))), [path]);
+  const opponentPathKeys = useMemo(() => new Set(opponentPath.map(({ row, col }) => cellKey(row, col))), [opponentPath]);
 
   const addCell = useCallback((row: number, col: number) => {
     setPath((current) => {
       if (current.some((cell) => cell.row === row && cell.col === col)) return current;
       const next = [...current, { row, col }];
-      return isContiguous(next) ? next : current;
+      if (!isContiguous(next)) return current;
+      onPreviewSelection(next);
+      return next;
     });
-  }, []);
+  }, [onPreviewSelection]);
 
   const finishSelection = useCallback(() => {
     if (path.length === 0) return;
     if (!isForwardPath(path)) {
       setPath([]);
       setIsDragging(false);
+      onPreviewSelection([]);
       return;
     }
     const spelled = pathToWord(displayGrid, path);
@@ -197,12 +205,15 @@ export function LetterGrid({
     if (match) onSubmit(path, match);
     setPath([]);
     setIsDragging(false);
-  }, [activeWords, displayGrid, onSubmit, path]);
+    onPreviewSelection([]);
+  }, [activeWords, displayGrid, onPreviewSelection, onSubmit, path]);
 
   const handlePointerDown = (row: number, col: number) => {
     if (disabled || animPhase !== 'idle') return;
+    const next = [{ row, col }];
     setIsDragging(true);
-    setPath([{ row, col }]);
+    setPath(next);
+    onPreviewSelection(next);
   };
 
   const handlePointerEnter = (row: number, col: number) => {
@@ -235,6 +246,7 @@ export function LetterGrid({
             {row.map((letter, colIndex) => {
               const key = cellKey(rowIndex, colIndex);
               const selected = pathKeys.has(key);
+              const opponentSelected = opponentPathKeys.has(key);
               const isFound = foundKeys.has(key);
               const fallDy = fallOffsets.get(key) ?? 0;
               const isSpawn = spawnKeys.has(key);
@@ -270,6 +282,7 @@ export function LetterGrid({
                   className={[
                     'grid-cell',
                     selected ? 'selected' : '',
+                    opponentSelected ? 'opponent-selected' : '',
                     celebrating ? 'celebrating' : '',
                     exploding ? 'exploding' : '',
                     falling ? 'falling' : '',

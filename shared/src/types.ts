@@ -40,7 +40,8 @@ export type PublicGameState = {
   players: [Player | null, Player | null];
   scores: Record<string, number>;
   wordsFoundCount: number;
-  activeWords: [string, string];
+  activeWords: string[];
+  selections?: Record<string, { path: CellCoord[]; updatedAt: number }>;
   unusedCount: number;
   deferredWords: string[];
   foundWords: string[];

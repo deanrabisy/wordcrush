@@ -8,6 +8,7 @@ import {
   generateRoomCode,
   joinRoomState,
   rematchState,
+  resetGameState,
   settleCascadeState,
   submitSelectionState,
   toPublicGameState,
@@ -146,12 +147,31 @@ export function useGameSocket() {
     [playerId],
   );
 
+  const previewSelection = useCallback(
+    async (roomCode: string, path: CellCoord[]) => {
+      if (!firebaseConfigured) return;
+      const db = getFirebaseDatabase();
+      const selectionRef = ref(db, roomPath(roomCode) + '/selections/' + playerId);
+      await set(selectionRef, { path, updatedAt: Date.now() });
+    },
+    [playerId],
+  );
+
   const rematch = useCallback(async () => {
     if (!firebaseConfigured || !gameState) return;
     const db = getFirebaseDatabase();
     await runTransaction(ref(db, roomPath(gameState.roomCode)), (current: FirebaseGameState | null) => {
       if (!current) return current;
       return rematchState(current);
+    });
+  }, [gameState]);
+
+  const resetGame = useCallback(async () => {
+    if (!firebaseConfigured || !gameState) return;
+    const db = getFirebaseDatabase();
+    await runTransaction(ref(db, roomPath(gameState.roomCode)), (current: FirebaseGameState | null) => {
+      if (!current) return current;
+      return resetGameState(current);
     });
   }, [gameState]);
 
@@ -169,7 +189,9 @@ export function useGameSocket() {
     joinRoom,
     startGame: () => undefined,
     submitSelection,
+    previewSelection,
     rematch,
+    resetGame,
     totalWords: TOTAL_WORDS,
     inviteRoomCode,
   };

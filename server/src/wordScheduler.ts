@@ -13,7 +13,7 @@ export function clonePools(pools: WordPools): WordPools {
 }
 
 export function deferUnfoundSibling(
-  activeWords: [string, string],
+  activeWords: string[],
   foundWord: string,
   pools: WordPools,
 ): string | null {
@@ -29,7 +29,7 @@ export function markFound(pools: WordPools, word: string): void {
   pools.found.add(word);
 }
 
-export function fillActiveWords(pools: WordPools): [string, string] | null {
+export function fillActiveWords(pools: WordPools): string[] | null {
   const next: string[] = [];
   while (next.length < 2) {
     if (pools.unused.length > 0) next.push(pools.unused.shift()!);
@@ -38,15 +38,14 @@ export function fillActiveWords(pools: WordPools): [string, string] | null {
   }
 
   if (next.length === 0) return null;
-  if (next.length === 1) return [next[0], next[0]];
-  return [next[0], next[1]];
+  return next;
 }
 
 export function handleWordFound(
   pools: WordPools,
-  activeWords: [string, string],
+  activeWords: string[],
   foundWord: string,
-): { nextActive: [string, string] | null; deferredWord: string | null } {
+): { nextActive: string[] | null; deferredWord: string | null } {
   markFound(pools, foundWord);
   const deferredWord = deferUnfoundSibling(activeWords, foundWord, pools);
   const nextActive = fillActiveWords(pools);

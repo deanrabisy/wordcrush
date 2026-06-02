@@ -136,7 +136,7 @@ function cascadeAfterFind(
   grid: string[][],
   foundPath: CellCoord[],
   foundWord: string,
-  nextActiveWords: [string, string] | null,
+  nextActiveWords: string[] | null,
 ): NonNullable<PublicGameState['cascadeSteps']> {
   const fromGrid = cloneGrid(grid);
   const afterRemove = cloneGrid(grid);
@@ -175,7 +175,7 @@ function validateSelection(
   grid: string[][],
   path: CellCoord[],
   claimedWord: string,
-  activeWords: [string, string],
+  activeWords: string[],
 ): { valid: true; word: string } | { valid: false; reason: string } {
   if (path.length === 0) return { valid: false, reason: 'Empty selection' };
   for (const { row, col } of path) {
@@ -202,7 +202,7 @@ function createInitialPools(unused: string[]): WordPools {
   return { unused: [...unused], deferred: [], found: new Set() };
 }
 
-function handleWordFound(pools: WordPools, activeWords: [string, string], foundWord: string): { nextActive: [string, string] | null; deferredWord: string | null } {
+function handleWordFound(pools: WordPools, activeWords: string[], foundWord: string): { nextActive: string[] | null; deferredWord: string | null } {
   pools.found.add(foundWord);
   const sibling = activeWords.find((word) => word !== foundWord);
   const deferredWord = sibling && !pools.found.has(sibling) ? sibling : null;
@@ -213,7 +213,7 @@ function handleWordFound(pools: WordPools, activeWords: [string, string], foundW
     else if (pools.deferred.length > 0) next.push(pools.deferred.shift()!);
     else break;
   }
-  const nextActive: [string, string] | null = next.length === 0 ? null : next.length === 1 ? [next[0], next[0]] : [next[0], next[1]];
+  const nextActive = next.length === 0 ? null : next;
   return { nextActive, deferredWord };
 }
 
@@ -230,7 +230,8 @@ export function normalizeRoomState(state: FirebaseGameState): FirebaseGameState 
     scores: state.scores ?? {},
     playerSlots: state.playerSlots ?? {},
     pools: { unused: state.pools?.unused ?? [], deferred: state.pools?.deferred ?? [], found: state.pools?.found ?? [] },
-    activeWords: [...state.activeWords] as [string, string],
+    activeWords: [...(state.activeWords ?? [])],
+    selections: state.selections ?? {},
     grid: state.grid ?? [],
     countdown: state.countdown ?? null,
     winnerId: state.winnerId ?? null,
@@ -253,6 +254,7 @@ export function toPublicGameState(state: FirebaseGameState): PublicGameState {
     scores: normalized.scores,
     wordsFoundCount: normalized.wordsFoundCount,
     activeWords: normalized.activeWords,
+    selections: normalized.selections,
     unusedCount: normalized.pools.unused.length,
     deferredWords: normalized.pools.deferred,
     foundWords: normalized.pools.found,
@@ -295,6 +297,7 @@ function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState 
     lastFoundPath: null,
     lastFoundWord: null,
     cascadeSteps: null,
+    selections: {},
     updatedAt: now,
   };
 }
@@ -323,6 +326,7 @@ export function createRoomState(roomCode: string, playerId: string, name: string
     lastFoundPath: null,
     lastFoundWord: null,
     cascadeSteps: null,
+    selections: {},
     createdAt: now,
     updatedAt: now,
   };
@@ -369,6 +373,7 @@ export function submitSelectionState(current: FirebaseGameState, playerId: strin
       lastFoundPath: path,
       lastFoundWord: foundWord,
       cascadeSteps,
+      selections: {},
       lastEvent: { type: 'word_found', playerId, word: foundWord, points, message: (player?.name ?? 'Player') + ' found ' + foundWord + '! (+' + points + ')', deferredWord: deferredWord ?? undefined },
       updatedAt: now,
     },
@@ -397,6 +402,37 @@ export function rematchState(current: FirebaseGameState, now = Date.now()): Fire
   const state = normalizeRoomState(current);
   if (!state.players.every(Boolean)) return state;
   return beginPlaying({ ...state, status: 'lobby', lastEvent: { type: 'rematch', message: 'Rematch ready' } }, now);
+}
+
+export function resetGameState(current: FirebaseGameState, now = Date.now()): FirebaseGameState {
+  const state = normalizeRoomState(current);
+  if (state.players.every(Boolean)) return beginPlaying({ ...state, lastEvent: { type: 'rematch', message: 'Game reset' } }, now);
+
+  const activeWords = getInitialActiveWords();
+  const scores = { ...state.scores };
+  for (const player of state.players) if (player) scores[player.id] = 0;
+  return {
+    ...state,
+    scores,
+    wordsFoundCount: 0,
+    activeWords,
+    pools: serializePools(createInitialPools(getInitialUnusedWords())),
+    grid: generateGrid(activeWords),
+    status: 'lobby',
+    layoutStartedAt: 0,
+    countdown: null,
+    winnerId: null,
+    lastEvent: { type: 'rematch', message: 'Game reset' },
+    resolving: false,
+    disconnectedPlayerId: null,
+    pauseUntil: null,
+    cascadeAnimating: false,
+    lastFoundPath: null,
+    lastFoundWord: null,
+    cascadeSteps: null,
+    selections: {},
+    updatedAt: now,
+  };
 }
 
 export { CASCADE_DURATION_MS };

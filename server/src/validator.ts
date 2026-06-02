@@ -29,7 +29,7 @@ export function isForwardPath(path: CellCoord[]): boolean {
   return dr >= 0 && dc >= 0 && dr + dc > 0;
 }
 
-export function matchesActiveWord(selected: string, activeWords: [string, string]): string | null {
+export function matchesActiveWord(selected: string, activeWords: string[]): string | null {
   for (const word of activeWords) {
     if (selected === word) return word;
   }
@@ -40,7 +40,7 @@ export function validateSelection(
   grid: string[][],
   path: CellCoord[],
   claimedWord: string,
-  activeWords: [string, string],
+  activeWords: string[],
 ): { valid: true; word: string } | { valid: false; reason: string } {
   if (path.length === 0) return { valid: false, reason: 'Empty selection' };
 
