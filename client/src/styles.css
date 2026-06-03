@@ -52,6 +52,15 @@ label { display: grid; gap: 8px; font-size: 0.95rem; font-weight: 700; }
 input { width: 100%; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-strong); color: inherit; outline: none; }
 input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(32, 196, 180, 0.18); }
 .lobby-actions, .join-form { display: grid; gap: 12px; }
+.wordset-picker { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; gap: 10px; }
+.wordset-picker legend { padding: 0; font-size: 0.95rem; font-weight: 800; }
+.wordset-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.wordset-option { position: relative; min-width: 0; display: grid; gap: 2px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.68); cursor: pointer; }
+.wordset-option input { position: absolute; opacity: 0; pointer-events: none; }
+.wordset-option.selected { border-color: var(--primary); background: rgba(32, 196, 180, 0.16); box-shadow: 0 0 0 3px rgba(32, 196, 180, 0.14); }
+.wordset-name { font-weight: 900; line-height: 1.1; }
+.wordset-description, .wordset-preview { color: var(--muted); font-size: 0.78rem; line-height: 1.2; }
+.wordset-preview { color: var(--primary-dark); font-weight: 800; }
 button { min-height: 46px; padding: 12px 16px; border: 1px solid transparent; border-radius: 8px; background: var(--ink); color: white; font-weight: 800; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
 button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(7, 56, 74, 0.18); }
 button.secondary { background: var(--panel-strong); color: var(--ink); border-color: var(--line); }
@@ -158,6 +167,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .target-header { flex-direction: column; }
   .room-code { font-size: 1.95rem; }
   .owner-mark { width: 86px; opacity: 0.68; }
+  .wordset-options { grid-template-columns: 1fr; }
 }
 
 @media (max-height: 720px) {

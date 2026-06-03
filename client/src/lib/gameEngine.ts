@@ -6,6 +6,7 @@ import {
   SPEED_BONUS,
   SPEED_BONUS_MS,
   TOTAL_WORDS,
+  DEFAULT_WORD_SET_ID,
   getInitialActiveWords,
   getInitialUnusedWords,
   type CellCoord,
@@ -250,8 +251,10 @@ function normalizeSelections(selections: FirebaseGameState['selections']): NonNu
 }
 
 export function normalizeRoomState(state: FirebaseGameState): FirebaseGameState {
+  const wordSetId = state.wordSetId ?? DEFAULT_WORD_SET_ID;
   return {
     ...state,
+    wordSetId,
     players: normalizePlayers(state.players),
     scores: state.scores ?? {},
     playerSlots: state.playerSlots ?? {},
@@ -276,6 +279,7 @@ export function toPublicGameState(state: FirebaseGameState): PublicGameState {
   const normalized = normalizeRoomState(state);
   return {
     roomCode: normalized.roomCode,
+    wordSetId: normalized.wordSetId,
     players: normalized.players,
     scores: normalized.scores,
     wordsFoundCount: normalized.wordsFoundCount,
@@ -301,15 +305,17 @@ export function toPublicGameState(state: FirebaseGameState): PublicGameState {
 }
 
 function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState {
-  const activeWords = getInitialActiveWords();
+  const wordSetId = state.wordSetId ?? DEFAULT_WORD_SET_ID;
+  const activeWords = getInitialActiveWords(wordSetId);
   const scores = { ...state.scores };
   for (const player of state.players) if (player) scores[player.id] = 0;
   return {
     ...state,
+    wordSetId,
     scores,
     wordsFoundCount: 0,
     activeWords,
-    pools: serializePools(createInitialPools(getInitialUnusedWords())),
+    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId))),
     grid: generateGrid(activeWords),
     status: 'playing',
     layoutStartedAt: now,
@@ -328,17 +334,18 @@ function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState 
   };
 }
 
-export function createRoomState(roomCode: string, playerId: string, name: string, now = Date.now()): FirebaseGameState {
-  const activeWords = getInitialActiveWords();
+export function createRoomState(roomCode: string, playerId: string, name: string, wordSetId: string = DEFAULT_WORD_SET_ID, now = Date.now()): FirebaseGameState {
+  const activeWords = getInitialActiveWords(wordSetId);
   const player = { id: playerId, name: name.trim() || 'Player' };
   return {
     roomCode,
+    wordSetId,
     players: [player, null],
     playerSlots: { [playerId]: 0 },
     scores: { [playerId]: 0 },
     wordsFoundCount: 0,
     activeWords,
-    pools: serializePools(createInitialPools(getInitialUnusedWords())),
+    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId))),
     grid: generateGrid(activeWords),
     status: 'lobby',
     layoutStartedAt: 0,
@@ -442,15 +449,17 @@ export function resetGameState(current: FirebaseGameState, now = Date.now()): Fi
   const state = normalizeRoomState(current);
   if (state.players.every(Boolean)) return beginPlaying({ ...state, lastEvent: { type: 'rematch', message: 'Game reset' } }, now);
 
-  const activeWords = getInitialActiveWords();
+  const wordSetId = state.wordSetId ?? DEFAULT_WORD_SET_ID;
+  const activeWords = getInitialActiveWords(wordSetId);
   const scores = { ...state.scores };
   for (const player of state.players) if (player) scores[player.id] = 0;
   return {
     ...state,
+    wordSetId,
     scores,
     wordsFoundCount: 0,
     activeWords,
-    pools: serializePools(createInitialPools(getInitialUnusedWords())),
+    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId))),
     grid: generateGrid(activeWords),
     status: 'lobby',
     layoutStartedAt: 0,

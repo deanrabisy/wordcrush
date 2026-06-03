@@ -45,6 +45,7 @@ export type SelectionPreview = {
 
 export type PublicGameState = {
   roomCode: string;
+  wordSetId: string;
   players: [Player | null, Player | null];
   scores: Record<string, number>;
   wordsFoundCount: number;
@@ -80,7 +81,7 @@ export type SubmitSelectionPayload = {
   word: string;
 };
 
-export type CreateRoomPayload = { playerName: string };
+export type CreateRoomPayload = { playerName: string; wordSetId?: string };
 export type JoinRoomPayload = { roomCode: string; playerName: string };
 
 export const CLIENT_EVENTS = {

@@ -33,7 +33,7 @@ io.on('connection', (socket) => {
   let currentRoomCode: string | null = null;
 
   socket.on(CLIENT_EVENTS.CREATE_ROOM, (payload: CreateRoomPayload) => {
-    const room = roomManager.createRoom(socket.id, payload.playerName);
+    const room = roomManager.createRoom(socket.id, payload.playerName, payload.wordSetId);
     currentRoomCode = room.getRoomCode();
     socket.join(currentRoomCode);
     socket.emit(SERVER_EVENTS.ROOM_STATE, room.getPublicState());

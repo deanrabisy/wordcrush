@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { DEFAULT_WORD_SET_ID, WORD_SETS } from '@word-crush-duel/shared';
 
 import { buildInviteLink, copyInviteLink } from '../lib/inviteLink';
 
@@ -6,7 +7,7 @@ import { buildInviteLink, copyInviteLink } from '../lib/inviteLink';
 
 type LobbyProps = {
 
-  onCreate: (name: string) => void;
+  onCreate: (name: string, wordSetId?: string) => void;
 
   onJoin: (code: string, name: string) => void;
 
@@ -53,6 +54,8 @@ export function Lobby({
   const [copied, setCopied] = useState(false);
 
   const [inviteLink, setInviteLink] = useState('');
+
+  const [wordSetId, setWordSetId] = useState(DEFAULT_WORD_SET_ID);
 
 
 
@@ -170,9 +173,49 @@ export function Lobby({
 
           {mode === 'home' ? (
 
+            <>
+
+            <fieldset className="wordset-picker">
+
+              <legend>Word set</legend>
+
+              <div className="wordset-options">
+
+                {WORD_SETS.map((wordSet) => (
+
+                  <label key={wordSet.id} className={`wordset-option ${wordSetId === wordSet.id ? 'selected' : ''}`}>
+
+                    <input
+
+                      type="radio"
+
+                      name="word-set"
+
+                      value={wordSet.id}
+
+                      checked={wordSetId === wordSet.id}
+
+                      onChange={() => setWordSetId(wordSet.id)}
+
+                    />
+
+                    <span className="wordset-name">{wordSet.name}</span>
+
+                    <span className="wordset-description">{wordSet.description}</span>
+
+                    <span className="wordset-preview">{wordSet.pairs[0][0]} / {wordSet.pairs[0][1]}</span>
+
+                  </label>
+
+                ))}
+
+              </div>
+
+            </fieldset>
+
             <div className="lobby-actions">
 
-              <button disabled={!canSubmit} onClick={() => onCreate(name.trim())}>
+              <button disabled={!canSubmit} onClick={() => onCreate(name.trim(), wordSetId)}>
 
                 Create Game
 
@@ -185,6 +228,8 @@ export function Lobby({
               </button>
 
             </div>
+
+            </>
 
           ) : (
 
