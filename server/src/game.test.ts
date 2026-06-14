@@ -65,19 +65,19 @@ describe('wordScheduler', () => {
     expect(next).toEqual(['COLD', 'SMALL']);
   });
 
-  it('completes after all 10 words are found', () => {
+  it('completes after the selected number of words are found', () => {
     const pools = createInitialPools([]);
     pools.found = new Set(getAllWords());
-    expect(isGameComplete(pools, 10)).toBe(true);
+    expect(isGameComplete(pools, 16)).toBe(true);
   });
 
-  it('simulates a full 10-find trace without losing words', () => {
+  it('simulates a full 16-find trace without losing words', () => {
     const all = getAllWords();
     let pools = createInitialPools(getInitialUnusedWords());
     let active: string[] = getInitialActiveWords();
     const foundOrder: string[] = [];
 
-    while (!isGameComplete(pools, 10)) {
+    while (!isGameComplete(pools, 16)) {
       const target = active[0];
       const { nextActive } = handleWordFound(pools, active, target);
       foundOrder.push(target);
@@ -85,8 +85,8 @@ describe('wordScheduler', () => {
       active = nextActive;
     }
 
-    expect(foundOrder.length).toBe(10);
-    expect(new Set(foundOrder).size).toBe(10);
+    expect(foundOrder.length).toBe(16);
+    expect(new Set(foundOrder).size).toBe(16);
     expect(all.every((word) => pools.found.has(word))).toBe(true);
   });
 

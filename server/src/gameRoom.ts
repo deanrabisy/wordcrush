@@ -9,6 +9,7 @@ import {
   CASCADE_DURATION_MS,
   TOTAL_WORDS,
   DEFAULT_WORD_SET_ID,
+  normalizeWordCount,
   type CellCoord,
   type CascadeSteps,
   type GameEvent,
@@ -33,6 +34,7 @@ function generateRoomCode(): string {
 type InternalGameState = {
   roomCode: string;
   wordSetId: string;
+  totalWords: number;
   players: [Player | null, Player | null];
   playerSlots: Map<string, number>;
   scores: Record<string, number>;
@@ -60,18 +62,25 @@ export class GameRoom {
   private state: InternalGameState;
   private onStateChange: (state: PublicGameState) => void;
 
-  constructor(onStateChange: (state: PublicGameState) => void, roomCode?: string, wordSetId: string = DEFAULT_WORD_SET_ID) {
+  constructor(
+    onStateChange: (state: PublicGameState) => void,
+    roomCode?: string,
+    wordSetId: string = DEFAULT_WORD_SET_ID,
+    totalWords = TOTAL_WORDS,
+  ) {
     this.onStateChange = onStateChange;
-    const initialActive = getInitialActiveWords(wordSetId);
+    const normalizedTotalWords = normalizeWordCount(totalWords);
+    const initialActive = getInitialActiveWords(wordSetId, normalizedTotalWords);
     this.state = {
       roomCode: roomCode ?? generateRoomCode(),
       wordSetId,
+      totalWords: normalizedTotalWords,
       players: [null, null],
       playerSlots: new Map(),
       scores: {},
       wordsFoundCount: 0,
       activeWords: initialActive,
-      pools: createInitialPools(getInitialUnusedWords(wordSetId)),
+      pools: createInitialPools(getInitialUnusedWords(wordSetId, normalizedTotalWords)),
       grid: generateGrid(initialActive),
       status: 'lobby',
       layoutStartedAt: 0,
@@ -98,6 +107,7 @@ export class GameRoom {
     return {
       roomCode: this.state.roomCode,
       wordSetId: this.state.wordSetId,
+      totalWords: this.state.totalWords,
       players: [...this.state.players],
       scores: { ...this.state.scores },
       wordsFoundCount: this.state.wordsFoundCount,
@@ -248,9 +258,9 @@ export class GameRoom {
   }
 
   private beginPlaying(): void {
-    const initialActive = getInitialActiveWords(this.state.wordSetId);
+    const initialActive = getInitialActiveWords(this.state.wordSetId, this.state.totalWords);
     this.state.activeWords = initialActive;
-    this.state.pools = createInitialPools(getInitialUnusedWords(this.state.wordSetId));
+    this.state.pools = createInitialPools(getInitialUnusedWords(this.state.wordSetId, this.state.totalWords));
     this.state.grid = generateGrid(initialActive);
     this.state.wordsFoundCount = 0;
     this.state.status = 'playing';
@@ -313,7 +323,7 @@ export class GameRoom {
       this.state.activeWords,
       foundWord,
     );
-    const gameComplete = isGameComplete(trialPools, TOTAL_WORDS);
+    const gameComplete = isGameComplete(trialPools, this.state.totalWords);
 
     let cascade;
     try {
@@ -432,8 +442,8 @@ export class RoomManager {
     this.broadcaster = fn;
   }
 
-  createRoom(playerId: string, name: string, wordSetId: string = DEFAULT_WORD_SET_ID): GameRoom {
-    const room = new GameRoom((state) => this.broadcaster?.(state), undefined, wordSetId);
+  createRoom(playerId: string, name: string, wordSetId: string = DEFAULT_WORD_SET_ID, totalWords = TOTAL_WORDS): GameRoom {
+    const room = new GameRoom((state) => this.broadcaster?.(state), undefined, wordSetId, totalWords);
     this.rooms.set(room.getRoomCode(), room);
     room.addPlayer(playerId, name);
     this.playerRooms.set(playerId, room.getRoomCode());

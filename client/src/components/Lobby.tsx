@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DEFAULT_WORD_SET_ID, WORD_SETS } from '@word-crush-duel/shared';
+import { DEFAULT_WORD_SET_ID, MATCH_WORD_COUNT_OPTIONS, TOTAL_WORDS, WORD_SETS } from '@word-crush-duel/shared';
 
 import { buildInviteLink, copyInviteLink } from '../lib/inviteLink';
 
@@ -7,7 +7,7 @@ import { buildInviteLink, copyInviteLink } from '../lib/inviteLink';
 
 type LobbyProps = {
 
-  onCreate: (name: string, wordSetId?: string) => void;
+  onCreate: (name: string, wordSetId?: string, totalWords?: number) => void;
 
   onJoin: (code: string, name: string) => void;
 
@@ -56,6 +56,7 @@ export function Lobby({
   const [inviteLink, setInviteLink] = useState('');
 
   const [wordSetId, setWordSetId] = useState(DEFAULT_WORD_SET_ID);
+  const [totalWords, setTotalWords] = useState(TOTAL_WORDS);
 
 
 
@@ -213,9 +214,43 @@ export function Lobby({
 
             </fieldset>
 
+            <fieldset className="word-count-picker">
+
+              <legend>Words in game</legend>
+
+              <div className="word-count-options">
+
+                {MATCH_WORD_COUNT_OPTIONS.map((count) => (
+
+                  <label key={count} className={`word-count-option ${totalWords === count ? 'selected' : ''}`}>
+
+                    <input
+
+                      type="radio"
+
+                      name="word-count"
+
+                      value={count}
+
+                      checked={totalWords === count}
+
+                      onChange={() => setTotalWords(count)}
+
+                    />
+
+                    <span>{count}</span>
+
+                  </label>
+
+                ))}
+
+              </div>
+
+            </fieldset>
+
             <div className="lobby-actions">
 
-              <button disabled={!canSubmit} onClick={() => onCreate(name.trim(), wordSetId)}>
+              <button disabled={!canSubmit} onClick={() => onCreate(name.trim(), wordSetId, totalWords)}>
 
                 Create Game
 

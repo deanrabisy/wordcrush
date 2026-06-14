@@ -46,6 +46,7 @@ export type SelectionPreview = {
 export type PublicGameState = {
   roomCode: string;
   wordSetId: string;
+  totalWords: number;
   players: [Player | null, Player | null];
   scores: Record<string, number>;
   wordsFoundCount: number;
@@ -81,7 +82,7 @@ export type SubmitSelectionPayload = {
   word: string;
 };
 
-export type CreateRoomPayload = { playerName: string; wordSetId?: string };
+export type CreateRoomPayload = { playerName: string; wordSetId?: string; totalWords?: number };
 export type JoinRoomPayload = { roomCode: string; playerName: string };
 
 export const CLIENT_EVENTS = {
@@ -105,7 +106,7 @@ export const FORWARD_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
   [1, 0],
   [1, 1],
 ];
-export const TOTAL_WORDS = 10;
+export const TOTAL_WORDS = 16;
 export const BASE_POINTS = 10;
 export const SPEED_BONUS = 5;
 export const SPEED_BONUS_MS = 3000;

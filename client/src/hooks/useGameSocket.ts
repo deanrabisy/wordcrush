@@ -77,7 +77,7 @@ export function useGameSocket() {
   }, [activeRoomCode, gameState?.cascadeAnimating]);
 
   const createRoom = useCallback(
-    async (playerName: string, wordSetId?: string) => {
+    async (playerName: string, wordSetId?: string, totalWords?: number) => {
       if (!firebaseConfigured) return;
       const db = getFirebaseDatabase();
       setError(null);
@@ -86,7 +86,7 @@ export function useGameSocket() {
         const roomRef = child(ref(db), roomPath(roomCode));
         const snapshot = await get(roomRef);
         if (snapshot.exists()) continue;
-        await set(roomRef, createRoomState(roomCode, playerId, playerName, wordSetId));
+        await set(roomRef, createRoomState(roomCode, playerId, playerName, wordSetId, totalWords));
         setActiveRoomCode(roomCode);
         return;
       }
@@ -196,7 +196,7 @@ export function useGameSocket() {
     previewSelection,
     rematch,
     resetGame,
-    totalWords: TOTAL_WORDS,
+    totalWords: gameState?.totalWords ?? TOTAL_WORDS,
     inviteRoomCode,
   };
 }

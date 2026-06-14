@@ -7,6 +7,7 @@ import {
   SPEED_BONUS_MS,
   TOTAL_WORDS,
   DEFAULT_WORD_SET_ID,
+  normalizeWordCount,
   getInitialActiveWords,
   getInitialUnusedWords,
   type CellCoord,
@@ -250,11 +251,22 @@ function normalizeSelections(selections: FirebaseGameState['selections']): NonNu
   return normalized;
 }
 
+function inferTotalWords(state: FirebaseGameState): number {
+  const words = new Set<string>();
+  for (const word of state.activeWords ?? []) words.add(word);
+  for (const word of state.pools?.unused ?? []) words.add(word);
+  for (const word of state.pools?.deferred ?? []) words.add(word);
+  for (const word of state.pools?.found ?? []) words.add(word);
+  return words.size || TOTAL_WORDS;
+}
+
 export function normalizeRoomState(state: FirebaseGameState): FirebaseGameState {
   const wordSetId = state.wordSetId ?? DEFAULT_WORD_SET_ID;
+  const totalWords = normalizeWordCount(state.totalWords ?? inferTotalWords(state));
   return {
     ...state,
     wordSetId,
+    totalWords,
     players: normalizePlayers(state.players),
     scores: state.scores ?? {},
     playerSlots: state.playerSlots ?? {},
@@ -280,6 +292,7 @@ export function toPublicGameState(state: FirebaseGameState): PublicGameState {
   return {
     roomCode: normalized.roomCode,
     wordSetId: normalized.wordSetId,
+    totalWords: normalized.totalWords,
     players: normalized.players,
     scores: normalized.scores,
     wordsFoundCount: normalized.wordsFoundCount,
@@ -306,16 +319,18 @@ export function toPublicGameState(state: FirebaseGameState): PublicGameState {
 
 function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState {
   const wordSetId = state.wordSetId ?? DEFAULT_WORD_SET_ID;
-  const activeWords = getInitialActiveWords(wordSetId);
+  const totalWords = normalizeWordCount(state.totalWords);
+  const activeWords = getInitialActiveWords(wordSetId, totalWords);
   const scores = { ...state.scores };
   for (const player of state.players) if (player) scores[player.id] = 0;
   return {
     ...state,
     wordSetId,
+    totalWords,
     scores,
     wordsFoundCount: 0,
     activeWords,
-    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId))),
+    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId, totalWords))),
     grid: generateGrid(activeWords),
     status: 'playing',
     layoutStartedAt: now,
@@ -334,18 +349,27 @@ function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState 
   };
 }
 
-export function createRoomState(roomCode: string, playerId: string, name: string, wordSetId: string = DEFAULT_WORD_SET_ID, now = Date.now()): FirebaseGameState {
-  const activeWords = getInitialActiveWords(wordSetId);
+export function createRoomState(
+  roomCode: string,
+  playerId: string,
+  name: string,
+  wordSetId: string = DEFAULT_WORD_SET_ID,
+  totalWords = TOTAL_WORDS,
+  now = Date.now(),
+): FirebaseGameState {
+  const normalizedTotalWords = normalizeWordCount(totalWords);
+  const activeWords = getInitialActiveWords(wordSetId, normalizedTotalWords);
   const player = { id: playerId, name: name.trim() || 'Player' };
   return {
     roomCode,
     wordSetId,
+    totalWords: normalizedTotalWords,
     players: [player, null],
     playerSlots: { [playerId]: 0 },
     scores: { [playerId]: 0 },
     wordsFoundCount: 0,
     activeWords,
-    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId))),
+    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId, normalizedTotalWords))),
     grid: generateGrid(activeWords),
     status: 'lobby',
     layoutStartedAt: 0,
@@ -390,7 +414,7 @@ export function submitSelectionState(current: FirebaseGameState, playerId: strin
   const points = BASE_POINTS + (elapsed <= SPEED_BONUS_MS ? SPEED_BONUS : 0);
   const pools = toPools(state.pools);
   const { nextActive, deferredWord } = handleWordFound(pools, state.activeWords, foundWord);
-  const gameComplete = pools.found.size >= TOTAL_WORDS;
+  const gameComplete = pools.found.size >= state.totalWords;
   const cascadeSteps = cascadeAfterFind(state.grid, path, foundWord, gameComplete ? null : nextActive);
   const player = state.players.find((candidate) => candidate?.id === playerId);
   const lastEvent: GameEvent = {
@@ -435,7 +459,7 @@ export function settleCascadeState(current: FirebaseGameState, now = Date.now())
   let state = normalizeRoomState(current);
   if (!state.cascadeAnimating) return state;
   state = { ...state, cascadeAnimating: false, resolving: false, lastFoundPath: null, lastFoundWord: null, cascadeSteps: null, updatedAt: now };
-  if (state.pools.found.length >= TOTAL_WORDS) return { ...finishGame(state), updatedAt: now };
+  if (state.pools.found.length >= state.totalWords) return { ...finishGame(state), updatedAt: now };
   return { ...state, layoutStartedAt: now };
 }
 
@@ -450,16 +474,18 @@ export function resetGameState(current: FirebaseGameState, now = Date.now()): Fi
   if (state.players.every(Boolean)) return beginPlaying({ ...state, lastEvent: { type: 'rematch', message: 'Game reset' } }, now);
 
   const wordSetId = state.wordSetId ?? DEFAULT_WORD_SET_ID;
-  const activeWords = getInitialActiveWords(wordSetId);
+  const totalWords = normalizeWordCount(state.totalWords);
+  const activeWords = getInitialActiveWords(wordSetId, totalWords);
   const scores = { ...state.scores };
   for (const player of state.players) if (player) scores[player.id] = 0;
   return {
     ...state,
     wordSetId,
+    totalWords,
     scores,
     wordsFoundCount: 0,
     activeWords,
-    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId))),
+    pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId, totalWords))),
     grid: generateGrid(activeWords),
     status: 'lobby',
     layoutStartedAt: 0,
