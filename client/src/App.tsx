@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { SelectionStatus } from '@word-crush-duel/shared';
+import { getWordMeaning, type SelectionStatus } from '@word-crush-duel/shared';
 import { GameOver } from './components/GameOver';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
+import { MeaningPopup } from './components/MeaningPopup';
 import { Scoreboard, TargetBar } from './components/TargetBar';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useSoundEffects } from './hooks/useSoundEffects';
@@ -13,6 +14,7 @@ const ownerLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 export default function App() {
   const [soundMuted, setSoundMuted] = useState(() => window.localStorage.getItem('word-crush-muted') === 'true');
   const [fullscreen, setFullscreen] = useState(() => Boolean(document.fullscreenElement));
+  const [meaningVisible, setMeaningVisible] = useState(false);
   const {
     connected,
     gameState,
@@ -30,12 +32,30 @@ export default function App() {
     inviteRoomCode,
   } = useGameSocket();
   useSoundEffects(gameState?.lastEvent, soundMuted);
+  const foundWord = gameState?.lastEvent?.type === 'word_found' ? gameState.lastEvent.word ?? null : null;
+  const foundMeaning = getWordMeaning(foundWord);
 
   useEffect(() => {
     const updateFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', updateFullscreen);
     return () => document.removeEventListener('fullscreenchange', updateFullscreen);
   }, []);
+
+  useEffect(() => {
+    if (!foundWord || !foundMeaning) {
+      setMeaningVisible(false);
+      return undefined;
+    }
+
+    setMeaningVisible(false);
+    const showTimer = window.setTimeout(() => setMeaningVisible(true), 80);
+    const hideTimer = window.setTimeout(() => setMeaningVisible(false), 3600);
+
+    return () => {
+      window.clearTimeout(showTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [foundWord, foundMeaning, gameState?.wordsFoundCount]);
 
   const handleSubmit = useCallback(
     (path: Parameters<typeof submitSelection>[1], word: string) => {
@@ -133,6 +153,8 @@ export default function App() {
       {gameState.status === 'paused' && (
         <div className="pause-banner">Opponent disconnected - pausing...</div>
       )}
+
+      <MeaningPopup word={foundWord} meaning={foundMeaning} visible={meaningVisible} />
 
       <div className="game-layout">
         <aside className="side-panel left-panel">

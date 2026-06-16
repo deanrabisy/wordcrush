@@ -22,7 +22,7 @@ body { margin: 0; min-height: 100vh; overflow: hidden; }
 button, input { font: inherit; }
 
 .app { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
-.app:not(.game) { height: 100dvh; align-items: center; justify-items: center; overflow-y: auto; padding-block: clamp(14px, 3vh, 28px); }
+.app:not(.game) { height: 100dvh; align-items: center; justify-items: center; overflow: hidden; padding-block: clamp(14px, 3vh, 28px); }
 .app.game { width: 100%; height: 100dvh; min-height: 0; place-items: stretch; padding: clamp(10px, 1.8vmin, 18px); overflow: hidden; }
 .card { background: color-mix(in srgb, var(--panel) 92%, white); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
 .brand-lockup { display: flex; align-items: center; gap: 12px; }
@@ -39,22 +39,27 @@ button, input { font: inherit; }
 .lobby-brand { justify-content: center; }
 .brand-logo-full {
   display: block;
-  width: min(305px, 100%);
-  max-height: min(292px, 38dvh);
+  width: min(360px, 100%);
+  max-height: min(330px, 48dvh);
   object-fit: contain;
-  margin: -10px auto 4px;
+  margin: 0 auto;
 }
 
-.lobby { width: min(460px, 100%); padding: clamp(16px, 2.4vh, 24px); display: grid; gap: clamp(10px, 1.7vh, 16px); }
+.lobby { width: min(1120px, 100%); max-height: calc(100dvh - 48px); padding: clamp(16px, 2.4vh, 24px); display: grid; grid-template-columns: minmax(260px, 0.86fr) minmax(520px, 1.14fr); align-items: stretch; gap: clamp(18px, 2.5vw, 34px); overflow: hidden; }
+.lobby-brand-panel { min-width: 0; display: grid; align-content: center; justify-items: center; gap: 14px; padding-inline: clamp(6px, 1.2vw, 16px); text-align: center; }
+.lobby-control-panel { min-width: 0; min-height: 0; display: grid; align-content: center; gap: clamp(10px, 1.5vh, 14px); }
 .lobby h1, .game-header h1 { margin: 0; font-size: 1.75rem; line-height: 1.05; }
 .subtitle, .hint { margin: 0; color: var(--muted); }
+.panel-title { margin: 0; font-size: 1.1rem; font-weight: 900; }
 label { display: grid; gap: 8px; font-size: 0.95rem; font-weight: 700; }
 input { width: 100%; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-strong); color: inherit; outline: none; }
 input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(32, 196, 180, 0.18); }
 .lobby-actions, .join-form { display: grid; gap: 12px; }
+.horizontal-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.identity-row { min-width: 0; display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.2fr); align-items: end; gap: 12px; }
 .wordset-picker, .word-count-picker { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; gap: 10px; }
 .wordset-picker legend, .word-count-picker legend { padding: 0; font-size: 0.95rem; font-weight: 800; }
-.wordset-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-height: 230px; overflow-y: auto; padding: 3px; }
+.wordset-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: min(300px, 39dvh); overflow-y: auto; padding: 3px; }
 .wordset-option { position: relative; min-width: 0; display: grid; gap: 2px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.68); cursor: pointer; }
 .wordset-option input, .word-count-option input { position: absolute; opacity: 0; pointer-events: none; }
 .wordset-option.selected, .word-count-option.selected { border-color: var(--primary); background: rgba(32, 196, 180, 0.16); box-shadow: 0 0 0 3px rgba(32, 196, 180, 0.14); }
@@ -93,6 +98,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .deferred-badge { padding: 4px 10px; border-radius: 999px; background: rgba(10, 166, 173, 0.13); color: var(--primary-dark); font-size: 0.85rem; }
 .target-words { display: grid; gap: 10px; }
 .target-word { padding: 12px 14px; border-radius: 8px; background: var(--ink); color: white; font-size: clamp(1rem, 2vmin, 1.28rem); font-weight: 900; letter-spacing: 0.08em; text-align: center; }
+.meaning-popup { position: fixed; left: 50%; top: clamp(86px, 12vh, 126px); z-index: 30; display: grid; grid-template-columns: auto minmax(120px, 1fr); align-items: center; gap: 14px; width: min(520px, calc(100vw - 32px)); padding: 14px 18px; border: 1px solid rgba(7, 56, 74, 0.16); border-radius: 8px; background: rgba(255, 255, 255, 0.96); color: var(--ink); box-shadow: 0 18px 48px rgba(7, 56, 74, 0.22); transform: translateX(-50%); animation: meaningPop 3.5s ease forwards; pointer-events: none; }
+.meaning-word { padding: 8px 12px; border-radius: 8px; background: var(--ink); color: white; font-weight: 900; letter-spacing: 0.08em; }
+.meaning-text { min-width: 0; font-size: clamp(1rem, 2vmin, 1.2rem); font-weight: 900; color: var(--primary-dark); }
 
 .letter-grid-wrap { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; transform: translateY(clamp(-18px, -2.2vmin, -8px)); }
 .found-word-burst { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); z-index: 10; padding: 10px 28px; border-radius: 999px; background: linear-gradient(135deg, var(--gold), var(--primary)); color: var(--ink); font-size: clamp(1.1rem, 2.4vmin, 1.65rem); font-weight: 900; letter-spacing: 0.12em; animation: wordBurst 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards; pointer-events: none; box-shadow: 0 12px 36px rgba(0, 112, 144, 0.32); }
@@ -154,12 +162,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @keyframes revealFlash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
 @keyframes invalidTap { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 75% { transform: translateX(-2px); } }
 @keyframes validTap { 0% { transform: scale(1); } 55% { transform: scale(1.12); } 100% { transform: scale(1.04); } }
+@keyframes meaningPop { 0% { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.96); } 12%, 78% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } 100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.98); } }
 
-@media (max-width: 640px) {
+@media (max-width: 860px) {
   body { overflow: auto; }
   .app { padding: 16px; }
   .app:not(.game) { height: auto; min-height: 100dvh; overflow: visible; padding-block: 12px; }
   .app.game { height: auto; min-height: 100dvh; overflow: visible; }
+  .lobby { max-height: none; grid-template-columns: 1fr; overflow: visible; }
+  .lobby-control-panel { align-content: start; }
+  .identity-row { grid-template-columns: 1fr; }
+  .horizontal-actions { grid-template-columns: 1fr; }
   .game-header { align-items: flex-start; flex-direction: column; }
   .game-layout { grid-template-columns: 1fr; align-items: start; }
   .side-panel { align-self: auto; }
@@ -171,15 +184,18 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .room-code { font-size: 1.95rem; }
   .owner-mark { width: 86px; opacity: 0.68; }
   .wordset-options { grid-template-columns: 1fr; }
+  .meaning-popup { top: 18px; grid-template-columns: 1fr; text-align: center; }
 }
 
 @media (max-height: 720px) {
   .app:not(.game) { padding-block: 8px; }
-  .lobby { padding: 16px; gap: 10px; }
-  .brand-logo-full { width: min(240px, 100%); max-height: 205px; margin-bottom: 2px; }
+  .lobby { padding: 16px; gap: 16px; }
+  .brand-logo-full { width: min(275px, 100%); max-height: 260px; margin-bottom: 2px; }
   .subtitle, .hint, label { font-size: 0.9rem; }
   input { padding: 10px 12px; }
   button { min-height: 42px; padding: 10px 14px; }
   .brand-logo { width: 64px; height: 64px; }
   .grid-cell { width: clamp(38px, 7.4vmin, 56px); height: clamp(38px, 7.4vmin, 56px); }
+  .wordset-options { max-height: min(245px, 38dvh); }
+  .wordset-option { padding: 7px 9px; }
 }

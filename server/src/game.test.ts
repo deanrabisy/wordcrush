@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAllWords, getInitialActiveWords, getInitialUnusedWords } from '@word-crush-duel/shared';
+import { getAllWords, getInitialActiveWords, getInitialUnusedWords, getWordMeaning, WORD_SETS } from '@word-crush-duel/shared';
 import { findWordInGrid, generateGrid } from './gridGenerator.js';
 import { validateSelection } from './validator.js';
 import {
@@ -97,5 +97,17 @@ describe('wordScheduler', () => {
 
     const next = fillActiveWords(pools);
     expect(next).toEqual(['COLD']);
+  });
+});
+
+describe('word meanings', () => {
+  it('has a short meaning for every word in every set', () => {
+    const words = new Set(WORD_SETS.flatMap((set) => set.pairs.flat()));
+
+    for (const word of words) {
+      const meaning = getWordMeaning(word);
+      expect(meaning, word).toBeTruthy();
+      expect(meaning!.split(/\s+/).length, word).toBeLessThanOrEqual(6);
+    }
   });
 });
