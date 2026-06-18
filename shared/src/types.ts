@@ -11,6 +11,8 @@ export type CascadeSteps = {
 };
 
 export const CASCADE_DURATION_MS = 2400;
+export const MEANING_DURATION_MS = 3000;
+export const ROUND_COUNTDOWN_MS = 3000;
 
 export type Player = {
   id: string;
@@ -59,6 +61,8 @@ export type PublicGameState = {
   status: GameStatus;
   layoutStartedAt: number;
   countdown: number | null;
+  meaningUntil: number | null;
+  roundReadyUntil: number | null;
   winnerId: string | null;
   lastEvent: GameEvent | null;
   resolving: boolean;
@@ -98,7 +102,7 @@ export const SERVER_EVENTS = {
   ERROR: 'error',
 } as const;
 
-export const GRID_SIZE = 8;
+export const GRID_SIZE = 9;
 
 /** ESL level 1: left→right, top→down, diagonal ↘ only (no backwards). */
 export const FORWARD_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [

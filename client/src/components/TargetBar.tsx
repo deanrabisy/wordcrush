@@ -16,7 +16,7 @@ export function TargetBar({
   const uniqueActive = [...new Set(activeWords)];
 
   return (
-    <div className="target-bar card">
+    <div className={`target-bar card ${uniqueActive.length === 1 ? 'single-target' : ''}`}>
       <div className="target-header">
         <span className="progress">
           {wordsFoundCount}/{totalWords} words found
@@ -26,9 +26,14 @@ export function TargetBar({
         )}
       </div>
       <div className="target-words">
-        {uniqueActive.map((word) => (
-          <div key={word} className="target-word">
-            {word}
+        {uniqueActive.map((word, index) => (
+          <div key={word} className="target-slot">
+            <div className="slot-window">
+              <div className="slot-reel" style={{ animationDelay: `${index * 90}ms` }}>
+                <span className="slot-word ghost">{word}</span>
+                <span className="slot-word">{word}</span>
+              </div>
+            </div>
           </div>
         ))}
       </div>

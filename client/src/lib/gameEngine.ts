@@ -3,6 +3,8 @@ import {
   CASCADE_DURATION_MS,
   FORWARD_DIRECTIONS,
   GRID_SIZE,
+  MEANING_DURATION_MS,
+  ROUND_COUNTDOWN_MS,
   SPEED_BONUS,
   SPEED_BONUS_MS,
   TOTAL_WORDS,
@@ -275,6 +277,8 @@ export function normalizeRoomState(state: FirebaseGameState): FirebaseGameState 
     selections: normalizeSelections(state.selections),
     grid: state.grid ?? [],
     countdown: state.countdown ?? null,
+    meaningUntil: state.meaningUntil ?? null,
+    roundReadyUntil: state.roundReadyUntil ?? null,
     winnerId: state.winnerId ?? null,
     lastEvent: state.lastEvent ?? null,
     resolving: Boolean(state.resolving),
@@ -305,6 +309,8 @@ export function toPublicGameState(state: FirebaseGameState): PublicGameState {
     status: normalized.status,
     layoutStartedAt: normalized.layoutStartedAt,
     countdown: normalized.countdown,
+    meaningUntil: normalized.meaningUntil,
+    roundReadyUntil: normalized.roundReadyUntil,
     winnerId: normalized.winnerId,
     lastEvent: normalized.lastEvent,
     resolving: normalized.resolving,
@@ -321,6 +327,7 @@ function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState 
   const wordSetId = state.wordSetId ?? DEFAULT_WORD_SET_ID;
   const totalWords = normalizeWordCount(state.totalWords);
   const activeWords = getInitialActiveWords(wordSetId, totalWords);
+  const roundReadyUntil = now + ROUND_COUNTDOWN_MS;
   const scores = { ...state.scores };
   for (const player of state.players) if (player) scores[player.id] = 0;
   return {
@@ -333,8 +340,10 @@ function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState 
     pools: serializePools(createInitialPools(getInitialUnusedWords(wordSetId, totalWords))),
     grid: generateGrid(activeWords),
     status: 'playing',
-    layoutStartedAt: now,
+    layoutStartedAt: roundReadyUntil,
     countdown: null,
+    meaningUntil: null,
+    roundReadyUntil,
     winnerId: null,
     lastEvent: { type: 'game_started', message: 'Go!' },
     resolving: false,
@@ -374,6 +383,8 @@ export function createRoomState(
     status: 'lobby',
     layoutStartedAt: 0,
     countdown: null,
+    meaningUntil: null,
+    roundReadyUntil: null,
     winnerId: null,
     lastEvent: { type: 'player_joined', playerId, message: player.name + ' joined' },
     resolving: false,
@@ -406,6 +417,7 @@ export function submitSelectionState(current: FirebaseGameState, playerId: strin
   const state = normalizeRoomState(current);
   if (state.status !== 'playing') return { state, error: 'Game is not in progress' };
   if (state.resolving || state.cascadeAnimating) return { state, error: 'Wait for the board to settle' };
+  if (state.roundReadyUntil && now < state.roundReadyUntil) return { state, error: 'Get ready for the next words' };
   if (state.playerSlots[playerId] === undefined) return { state, error: 'You are not in this room' };
   const validation = validateSelection(state.grid, path, claimedWord.toUpperCase(), state.activeWords);
   if (!validation.valid) return { state: { ...state, lastEvent: { type: 'invalid_selection', playerId, message: validation.reason }, updatedAt: now }, error: validation.reason };
@@ -435,6 +447,8 @@ export function submitSelectionState(current: FirebaseGameState, playerId: strin
       grid: cascadeSteps.finalGrid,
       resolving: true,
       cascadeAnimating: true,
+      meaningUntil: null,
+      roundReadyUntil: null,
       lastFoundPath: path,
       lastFoundWord: foundWord,
       cascadeSteps,
@@ -458,9 +472,21 @@ function finishGame(state: FirebaseGameState): FirebaseGameState {
 export function settleCascadeState(current: FirebaseGameState, now = Date.now()): FirebaseGameState {
   let state = normalizeRoomState(current);
   if (!state.cascadeAnimating) return state;
-  state = { ...state, cascadeAnimating: false, resolving: false, lastFoundPath: null, lastFoundWord: null, cascadeSteps: null, updatedAt: now };
+  const meaningUntil = now + MEANING_DURATION_MS;
+  const roundReadyUntil = meaningUntil + ROUND_COUNTDOWN_MS;
+  state = {
+    ...state,
+    cascadeAnimating: false,
+    resolving: false,
+    lastFoundPath: null,
+    lastFoundWord: null,
+    cascadeSteps: null,
+    meaningUntil,
+    roundReadyUntil,
+    updatedAt: now,
+  };
   if (state.pools.found.length >= state.totalWords) return { ...finishGame(state), updatedAt: now };
-  return { ...state, layoutStartedAt: now };
+  return { ...state, layoutStartedAt: roundReadyUntil };
 }
 
 export function rematchState(current: FirebaseGameState, now = Date.now()): FirebaseGameState {
@@ -490,6 +516,8 @@ export function resetGameState(current: FirebaseGameState, now = Date.now()): Fi
     status: 'lobby',
     layoutStartedAt: 0,
     countdown: null,
+    meaningUntil: null,
+    roundReadyUntil: null,
     winnerId: null,
     lastEvent: { type: 'rematch', message: 'Game reset' },
     resolving: false,

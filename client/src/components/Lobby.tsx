@@ -31,6 +31,7 @@ export function Lobby({
   const [inviteLink, setInviteLink] = useState('');
   const [wordSetId, setWordSetId] = useState(DEFAULT_WORD_SET_ID);
   const [totalWords, setTotalWords] = useState(TOTAL_WORDS);
+  const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null);
 
   useEffect(() => {
     if (initialJoinCode) setJoinCode(initialJoinCode);
@@ -40,7 +41,12 @@ export function Lobby({
     if (roomCode) setInviteLink(buildInviteLink(roomCode));
   }, [roomCode]);
 
+  useEffect(() => {
+    if (error) setPendingAction(null);
+  }, [error]);
+
   const canSubmit = name.trim().length > 0 && connected;
+  const isBusy = pendingAction !== null;
 
   const handleCopyLink = async () => {
     if (!roomCode) return;
@@ -135,10 +141,16 @@ export function Lobby({
                 </fieldset>
 
                 <div className="lobby-actions horizontal-actions">
-                  <button disabled={!canSubmit} onClick={() => onCreate(name.trim(), wordSetId, totalWords)}>
-                    Create Game
+                  <button
+                    disabled={!canSubmit || isBusy}
+                    onClick={() => {
+                      setPendingAction('create');
+                      onCreate(name.trim(), wordSetId, totalWords);
+                    }}
+                  >
+                    {pendingAction === 'create' ? 'Creating...' : 'Create Game'}
                   </button>
-                  <button className="secondary" onClick={() => setMode('join')}>
+                  <button className="secondary" disabled={isBusy} onClick={() => setMode('join')}>
                     Join Game
                   </button>
                 </div>
@@ -156,12 +168,15 @@ export function Lobby({
                 </label>
                 <div className="lobby-actions horizontal-actions">
                   <button
-                    disabled={!canSubmit || joinCode.trim().length < 4}
-                    onClick={() => onJoin(joinCode.trim(), name.trim())}
+                    disabled={!canSubmit || joinCode.trim().length < 4 || isBusy}
+                    onClick={() => {
+                      setPendingAction('join');
+                      onJoin(joinCode.trim(), name.trim());
+                    }}
                   >
-                    Join
+                    {pendingAction === 'join' ? 'Joining...' : 'Join'}
                   </button>
-                  <button className="secondary" onClick={() => setMode('home')}>
+                  <button className="secondary" disabled={isBusy} onClick={() => setMode('home')}>
                     Back
                   </button>
                 </div>

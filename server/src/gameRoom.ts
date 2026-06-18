@@ -4,6 +4,8 @@ import {
   getAllWords,
   getInitialActiveWords,
   getInitialUnusedWords,
+  MEANING_DURATION_MS,
+  ROUND_COUNTDOWN_MS,
   SPEED_BONUS,
   SPEED_BONUS_MS,
   CASCADE_DURATION_MS,
@@ -45,6 +47,8 @@ type InternalGameState = {
   status: PublicGameState['status'];
   layoutStartedAt: number;
   countdown: number | null;
+  meaningUntil: number | null;
+  roundReadyUntil: number | null;
   winnerId: string | null;
   lastEvent: GameEvent | null;
   resolving: boolean;
@@ -85,6 +89,8 @@ export class GameRoom {
       status: 'lobby',
       layoutStartedAt: 0,
       countdown: null,
+      meaningUntil: null,
+      roundReadyUntil: null,
       winnerId: null,
       lastEvent: null,
       resolving: false,
@@ -119,6 +125,8 @@ export class GameRoom {
       status: this.state.status,
       layoutStartedAt: this.state.layoutStartedAt,
       countdown: this.state.countdown,
+      meaningUntil: this.state.meaningUntil,
+      roundReadyUntil: this.state.roundReadyUntil,
       winnerId: this.state.winnerId,
       lastEvent: this.state.lastEvent,
       resolving: this.state.resolving,
@@ -265,13 +273,15 @@ export class GameRoom {
     this.state.wordsFoundCount = 0;
     this.state.status = 'playing';
     this.state.countdown = null;
+    this.state.meaningUntil = null;
+    this.state.roundReadyUntil = Date.now() + ROUND_COUNTDOWN_MS;
     this.state.winnerId = null;
     this.state.resolving = false;
     this.state.cascadeAnimating = false;
     this.state.lastFoundPath = null;
     this.state.lastFoundWord = null;
     this.state.cascadeSteps = null;
-    this.state.layoutStartedAt = Date.now();
+    this.state.layoutStartedAt = this.state.roundReadyUntil;
     for (const player of this.state.players) {
       if (player) this.state.scores[player.id] = 0;
     }
@@ -289,6 +299,9 @@ export class GameRoom {
     }
     if (this.state.resolving || this.state.cascadeAnimating) {
       return { ok: false, error: 'Wait for the board to settle' };
+    }
+    if (this.state.roundReadyUntil && Date.now() < this.state.roundReadyUntil) {
+      return { ok: false, error: 'Get ready for the next words' };
     }
     if (!this.state.playerSlots.has(playerId)) {
       return { ok: false, error: 'You are not in this room' };
@@ -351,6 +364,8 @@ export class GameRoom {
     this.state.lastFoundPath = path;
     this.state.lastFoundWord = foundWord;
     this.state.cascadeAnimating = true;
+    this.state.meaningUntil = null;
+    this.state.roundReadyUntil = null;
     this.state.cascadeSteps = cascade;
     this.state.grid = cascade.finalGrid;
 
@@ -381,7 +396,9 @@ export class GameRoom {
       if (gameComplete) {
         this.finishGame();
       } else {
-        this.state.layoutStartedAt = Date.now();
+        this.state.meaningUntil = Date.now() + MEANING_DURATION_MS;
+        this.state.roundReadyUntil = this.state.meaningUntil + ROUND_COUNTDOWN_MS;
+        this.state.layoutStartedAt = this.state.roundReadyUntil;
         this.emit();
       }
     }, CASCADE_DURATION_MS);
@@ -421,6 +438,8 @@ export class GameRoom {
     this.state.pauseUntil = null;
     this.state.status = 'lobby';
     this.state.countdown = null;
+    this.state.meaningUntil = null;
+    this.state.roundReadyUntil = null;
     this.state.winnerId = null;
     this.state.wordsFoundCount = 0;
     this.state.lastEvent = { type: 'rematch', message: 'Rematch ready' };

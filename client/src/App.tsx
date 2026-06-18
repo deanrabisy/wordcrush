@@ -3,7 +3,7 @@ import { getWordMeaning, type SelectionStatus } from '@word-crush-duel/shared';
 import { GameOver } from './components/GameOver';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
-import { MeaningPopup } from './components/MeaningPopup';
+import { MeaningConsole } from './components/MeaningPopup';
 import { Scoreboard, TargetBar } from './components/TargetBar';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useSoundEffects } from './hooks/useSoundEffects';
@@ -14,7 +14,7 @@ const ownerLogoSrc = `${import.meta.env.BASE_URL}logo.png`;
 export default function App() {
   const [soundMuted, setSoundMuted] = useState(() => window.localStorage.getItem('word-crush-muted') === 'true');
   const [fullscreen, setFullscreen] = useState(() => Boolean(document.fullscreenElement));
-  const [meaningVisible, setMeaningVisible] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const {
     connected,
     gameState,
@@ -42,20 +42,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!foundWord || !foundMeaning) {
-      setMeaningVisible(false);
-      return undefined;
-    }
-
-    setMeaningVisible(false);
-    const showTimer = window.setTimeout(() => setMeaningVisible(true), 80);
-    const hideTimer = window.setTimeout(() => setMeaningVisible(false), 3600);
-
-    return () => {
-      window.clearTimeout(showTimer);
-      window.clearTimeout(hideTimer);
-    };
-  }, [foundWord, foundMeaning, gameState?.wordsFoundCount]);
+    const needsClock = Boolean(gameState?.roundReadyUntil || gameState?.meaningUntil);
+    if (!needsClock) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 150);
+    return () => window.clearInterval(timer);
+  }, [gameState?.roundReadyUntil, gameState?.meaningUntil]);
 
   const handleSubmit = useCallback(
     (path: Parameters<typeof submitSelection>[1], word: string) => {
@@ -95,6 +86,25 @@ export default function App() {
     gameState.status === 'paused';
   const isFinished = gameState.status === 'finished';
   const opponentSelection = opponent ? gameState.selections?.[opponent.id] ?? null : null;
+  const meaningActive = Boolean(
+    foundWord &&
+      foundMeaning &&
+      !gameState.cascadeAnimating &&
+      gameState.meaningUntil &&
+      now < gameState.meaningUntil,
+  );
+  const roundLocked = Boolean(
+    gameState.roundReadyUntil &&
+      gameState.status === 'playing' &&
+      now < gameState.roundReadyUntil,
+  );
+  const countdownActive = Boolean(
+    roundLocked &&
+      (!gameState.meaningUntil || now >= gameState.meaningUntil),
+  );
+  const roundCountdown = countdownActive && gameState.roundReadyUntil
+    ? Math.max(1, Math.ceil((gameState.roundReadyUntil - now) / 1000))
+    : null;
   const toggleSound = () => {
     setSoundMuted((current) => {
       const next = !current;
@@ -146,15 +156,9 @@ export default function App() {
         </div>
       </header>
 
-      {gameState.status === 'countdown' && gameState.countdown !== null && (
-        <div className="countdown-overlay">{gameState.countdown || 'Go!'}</div>
-      )}
-
       {gameState.status === 'paused' && (
         <div className="pause-banner">Opponent disconnected - pausing...</div>
       )}
-
-      <MeaningPopup word={foundWord} meaning={foundMeaning} visible={meaningVisible} />
 
       <div className="game-layout">
         <aside className="side-panel left-panel">
@@ -166,22 +170,40 @@ export default function App() {
           />
         </aside>
 
-        {isPlaying && (
-          <LetterGrid
-            grid={gameState.grid}
+        <section className="board-stage">
+          <TargetBar
             activeWords={gameState.activeWords}
-            opponentSelection={opponentSelection}
-            disabled={
-              gameState.status !== 'playing' ||
-              gameState.resolving ||
-              gameState.cascadeAnimating
-            }
-            cascadeAnimating={gameState.cascadeAnimating}
-            cascadeSteps={gameState.cascadeSteps}
-            onPreviewSelection={handlePreviewSelection}
-            onSubmit={handleSubmit}
+            wordsFoundCount={gameState.wordsFoundCount}
+            totalWords={totalWords}
+            deferredWords={gameState.deferredWords}
           />
-        )}
+
+          {isPlaying && (
+            <div className="board-wrap">
+              {gameState.status === 'countdown' && gameState.countdown !== null && (
+                <div className="round-countdown-overlay">{gameState.countdown || 'Go!'}</div>
+              )}
+              {roundCountdown !== null && (
+                <div className="round-countdown-overlay">{roundCountdown}</div>
+              )}
+              <LetterGrid
+                grid={gameState.grid}
+                activeWords={gameState.activeWords}
+                opponentSelection={opponentSelection}
+                disabled={
+                  gameState.status !== 'playing' ||
+                  gameState.resolving ||
+                  gameState.cascadeAnimating ||
+                  roundLocked
+                }
+                cascadeAnimating={gameState.cascadeAnimating}
+                cascadeSteps={gameState.cascadeSteps}
+                onPreviewSelection={handlePreviewSelection}
+                onSubmit={handleSubmit}
+              />
+            </div>
+          )}
+        </section>
 
         {isFinished && (
           <GameOver
@@ -193,12 +215,7 @@ export default function App() {
         )}
 
         <aside className="side-panel right-panel">
-          <TargetBar
-            activeWords={gameState.activeWords}
-            wordsFoundCount={gameState.wordsFoundCount}
-            totalWords={totalWords}
-            deferredWords={gameState.deferredWords}
-          />
+          <MeaningConsole word={foundWord} meaning={foundMeaning} active={meaningActive} countdown={roundCountdown} />
         </aside>
       </div>
       <img className="owner-mark" src={ownerLogoSrc} alt="Adaptive Dean Design" />
