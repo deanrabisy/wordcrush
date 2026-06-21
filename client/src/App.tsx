@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getWordMeaning, type SelectionStatus } from '@word-crush-duel/shared';
 import { GameOver } from './components/GameOver';
+import { GameSettings } from './components/GameSettings';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
 import { MeaningConsole, MeaningOverlay } from './components/MeaningPopup';
@@ -15,6 +16,7 @@ export default function App() {
   const [soundMuted, setSoundMuted] = useState(() => window.localStorage.getItem('word-crush-muted') === 'true');
   const [fullscreen, setFullscreen] = useState(() => Boolean(document.fullscreenElement));
   const [now, setNow] = useState(() => Date.now());
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const {
     connected,
     gameState,
@@ -27,6 +29,7 @@ export default function App() {
     previewSelection,
     rematch,
     resetGame,
+    updateGameSettings,
     totalWords,
     inviteRoomCode,
   } = useGameSocket();
@@ -85,6 +88,7 @@ export default function App() {
     gameState.status === 'paused';
   const isFinished = gameState.status === 'finished';
   const opponentSelection = opponent ? gameState.selections?.[opponent.id] ?? null : null;
+  const isHost = gameState.players[0]?.id === playerId;
   const meaningActive = Boolean(
     foundWord &&
       foundMeaning &&
@@ -155,6 +159,11 @@ export default function App() {
           <h1>Word Crush Duel</h1>
           </div>
           <div className="game-actions vertical-actions">
+          {isHost && (
+            <button type="button" className="secondary compact-button" onClick={() => setSettingsOpen(true)}>
+              Settings
+            </button>
+          )}
           <button type="button" className="secondary compact-button" onClick={resetGame}>
             Reset
           </button>
@@ -220,6 +229,17 @@ export default function App() {
           />
         </aside>
       </div>
+      {settingsOpen && isHost && (
+        <GameSettings
+          currentWordSetId={gameState.wordSetId}
+          currentTotalWords={gameState.totalWords}
+          onClose={() => setSettingsOpen(false)}
+          onApply={async (wordSetId, selectedTotalWords) => {
+            await updateGameSettings(wordSetId, selectedTotalWords);
+            setSettingsOpen(false);
+          }}
+        />
+      )}
       <img className="owner-mark" src={ownerLogoSrc} alt="Adaptive Dean Design" />
     </main>
   );

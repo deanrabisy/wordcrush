@@ -508,6 +508,23 @@ export function rematchState(current: FirebaseGameState, now = Date.now()): Fire
   return beginPlaying({ ...state, status: 'lobby', lastEvent: { type: 'rematch', message: 'Rematch ready' } }, now);
 }
 
+export function updateGameSettingsState(
+  current: FirebaseGameState,
+  hostPlayerId: string,
+  wordSetId: string,
+  totalWords: number,
+  now = Date.now(),
+): FirebaseGameState {
+  const state = normalizeRoomState(current);
+  if (state.players[0]?.id !== hostPlayerId) return state;
+  return resetGameState({
+    ...state,
+    wordSetId,
+    totalWords: normalizeWordCount(totalWords),
+    status: 'lobby',
+  }, now);
+}
+
 export function resetGameState(current: FirebaseGameState, now = Date.now()): FirebaseGameState {
   const state = normalizeRoomState(current);
   if (state.players.every(Boolean)) return beginPlaying({ ...state, lastEvent: { type: 'rematch', message: 'Game reset' } }, now);

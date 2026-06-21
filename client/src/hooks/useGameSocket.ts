@@ -12,6 +12,7 @@ import {
   settleCascadeState,
   submitSelectionState,
   toPublicGameState,
+  updateGameSettingsState,
   type FirebaseGameState,
 } from '../lib/gameEngine';
 import { getRoomCodeFromUrl } from '../lib/inviteLink';
@@ -179,6 +180,15 @@ export function useGameSocket() {
     });
   }, [gameState]);
 
+  const updateGameSettings = useCallback(async (wordSetId: string, totalWords: number) => {
+    if (!firebaseConfigured || !gameState) return;
+    const db = getFirebaseDatabase();
+    await runTransaction(ref(db, roomPath(gameState.roomCode)), (current: FirebaseGameState | null) => {
+      if (!current) return current;
+      return updateGameSettingsState(current, playerId, wordSetId, totalWords);
+    });
+  }, [gameState, playerId]);
+
   const self = useMemo(() => gameState?.players.find((player) => player?.id === playerId) ?? null, [gameState, playerId]);
   const opponent = useMemo(() => gameState?.players.find((player) => player && player.id !== playerId) ?? null, [gameState, playerId]);
 
@@ -196,6 +206,7 @@ export function useGameSocket() {
     previewSelection,
     rematch,
     resetGame,
+    updateGameSettings,
     totalWords: gameState?.totalWords ?? TOTAL_WORDS,
     inviteRoomCode,
   };
