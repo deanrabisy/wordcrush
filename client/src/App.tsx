@@ -4,7 +4,7 @@ import { GameOver } from './components/GameOver';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
 import { MeaningConsole, MeaningOverlay } from './components/MeaningPopup';
-import { Scoreboard, TargetBar } from './components/TargetBar';
+import { TargetBar } from './components/TargetBar';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useSoundEffects } from './hooks/useSoundEffects';
 
@@ -20,7 +20,6 @@ export default function App() {
     gameState,
     error,
     playerId,
-    self,
     opponent,
     createRoom,
     joinRoom,
@@ -141,12 +140,17 @@ export default function App() {
 
   return (
     <main className="app game">
-      <header className="game-header">
-        <div className="brand-lockup">
+      {gameState.status === 'paused' && (
+        <div className="pause-banner">Opponent disconnected - pausing...</div>
+      )}
+
+      <div className="game-layout">
+        <aside className="game-control-rail">
+          <div className="brand-lockup game-brand-lockup">
           <img className="brand-logo brand-logo-round" src={logoSrc} alt="Word Crush Duel logo" />
           <h1>Word Crush Duel</h1>
-        </div>
-        <div className="game-actions">
+          </div>
+          <div className="game-actions vertical-actions">
           <button type="button" className="secondary compact-button" onClick={resetGame}>
             Reset
           </button>
@@ -156,21 +160,7 @@ export default function App() {
           <button type="button" className="secondary compact-button" onClick={toggleSound}>
             {soundMuted ? 'Sound off' : 'Sound on'}
           </button>
-        </div>
-      </header>
-
-      {gameState.status === 'paused' && (
-        <div className="pause-banner">Opponent disconnected - pausing...</div>
-      )}
-
-      <div className="game-layout">
-        <aside className="side-panel left-panel">
-          <Scoreboard
-            gameState={gameState}
-            playerId={playerId}
-            selfName={self?.name ?? 'You'}
-            opponentName={opponent?.name ?? 'Opponent'}
-          />
+          </div>
         </aside>
 
         <section className="board-stage">
@@ -185,43 +175,42 @@ export default function App() {
             <MeaningOverlay word={foundWord} meaning={foundMeaning} active={meaningActive} />
             {isPlaying && (
               <>
-              {gameState.status === 'countdown' && gameState.countdown !== null && (
-                <div className="round-countdown-overlay">{gameState.countdown || 'Go!'}</div>
-              )}
-              {roundCountdown !== null && (
-                <div className="round-countdown-overlay">{roundCountdown}</div>
-              )}
-              <LetterGrid
-                grid={gameState.grid}
-                activeWords={gameState.activeWords}
-                opponentSelection={opponentSelection}
-                disabled={
-                  gameState.status !== 'playing' ||
-                  gameState.resolving ||
-                  gameState.cascadeAnimating ||
-                  roundLocked
-                }
-                cascadeAnimating={gameState.cascadeAnimating}
-                cascadeSteps={gameState.cascadeSteps}
-                onPreviewSelection={handlePreviewSelection}
-                onSubmit={handleSubmit}
-              />
+                {gameState.status === 'countdown' && gameState.countdown !== null && (
+                  <div className="round-countdown-overlay">{gameState.countdown || 'Go!'}</div>
+                )}
+                {roundCountdown !== null && (
+                  <div className="round-countdown-overlay">{roundCountdown}</div>
+                )}
+                <LetterGrid
+                  grid={gameState.grid}
+                  activeWords={gameState.activeWords}
+                  opponentSelection={opponentSelection}
+                  disabled={
+                    gameState.status !== 'playing' ||
+                    gameState.resolving ||
+                    gameState.cascadeAnimating ||
+                    roundLocked
+                  }
+                  cascadeAnimating={gameState.cascadeAnimating}
+                  cascadeSteps={gameState.cascadeSteps}
+                  onPreviewSelection={handlePreviewSelection}
+                  onSubmit={handleSubmit}
+                />
               </>
+            )}
+            {isFinished && (
+              <GameOver
+                message={gameState.lastEvent?.message ?? 'Game over'}
+                winnerId={gameState.winnerId}
+                playerId={playerId}
+                onRematch={rematch}
+              />
             )}
           </div>
         </section>
 
-        {isFinished && (
-          <GameOver
-            message={gameState.lastEvent?.message ?? 'Game over'}
-            winnerId={gameState.winnerId}
-            playerId={playerId}
-            onRematch={rematch}
-          />
-        )}
-
         <aside className="side-panel right-panel">
-          <MeaningConsole history={visibleMeaningHistory} players={gameState.players} />
+          <MeaningConsole history={visibleMeaningHistory} players={gameState.players} scores={gameState.scores} />
         </aside>
       </div>
       <img className="owner-mark" src={ownerLogoSrc} alt="Adaptive Dean Design" />

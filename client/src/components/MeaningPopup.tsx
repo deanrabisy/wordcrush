@@ -20,9 +20,10 @@ export function MeaningOverlay({ word, meaning, active }: MeaningOverlayProps) {
 type MeaningConsoleProps = {
   history: FoundWordRecord[];
   players: [Player | null, Player | null];
+  scores: Record<string, number>;
 };
 
-export function MeaningConsole({ history, players }: MeaningConsoleProps) {
+export function MeaningConsole({ history, players, scores }: MeaningConsoleProps) {
   return (
     <div className="meaning-console card" aria-live="polite">
       <div className="meaning-console-header">
@@ -50,6 +51,15 @@ export function MeaningConsole({ history, players }: MeaningConsoleProps) {
             );
           })
         )}
+      </div>
+
+      <div className="meaning-score-footer">
+        {players.map((player, index) => player && (
+          <div className="console-score-row" key={player.id}>
+            <span className={`console-player player-${index + 1}`}>{player.name}</span>
+            <span className="console-score">{scores[player.id] ?? 0}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
