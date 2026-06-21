@@ -104,6 +104,10 @@ export default function App() {
   const roundCountdown = countdownActive && gameState.roundReadyUntil
     ? Math.max(1, Math.ceil((gameState.roundReadyUntil - now) / 1000))
     : null;
+  const intermissionActive = Boolean(
+    !gameState.cascadeAnimating &&
+      (roundLocked || gameState.status === 'countdown'),
+  );
   const visibleMeaningHistory = meaningActive
     ? gameState.wordHistory.slice(0, -1)
     : gameState.wordHistory;
@@ -166,12 +170,9 @@ export default function App() {
         <section className="board-stage">
           <TargetBar
             activeWords={gameState.activeWords}
-            wordsFoundCount={gameState.wordsFoundCount}
-            totalWords={totalWords}
-            deferredWords={gameState.deferredWords}
           />
 
-          <div className="board-wrap">
+          <div className={`board-wrap ${intermissionActive ? 'intermission' : ''}`}>
             <MeaningOverlay word={foundWord} meaning={foundMeaning} active={meaningActive} />
             {isPlaying && (
               <>
@@ -210,7 +211,13 @@ export default function App() {
         </section>
 
         <aside className="side-panel right-panel">
-          <MeaningConsole history={visibleMeaningHistory} players={gameState.players} scores={gameState.scores} />
+          <MeaningConsole
+            history={visibleMeaningHistory}
+            players={gameState.players}
+            scores={gameState.scores}
+            wordsFoundCount={gameState.wordsFoundCount}
+            totalWords={totalWords}
+          />
         </aside>
       </div>
       <img className="owner-mark" src={ownerLogoSrc} alt="Adaptive Dean Design" />

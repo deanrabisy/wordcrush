@@ -101,26 +101,21 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .event-message { margin: 8px 0 0; font-weight: 700; }
 .board-stage { position: relative; width: 100%; min-width: 0; display: grid; justify-items: center; gap: clamp(8px, 1.1vmin, 12px); }
 .right-panel { height: calc(100dvh - 28px); align-self: start; align-items: stretch; }
-.board-wrap { position: relative; width: 100%; display: grid; place-items: center; }
+.board-wrap { position: relative; width: 100%; display: grid; place-items: center; isolation: isolate; }
+.board-wrap::after { content: ''; position: absolute; inset: 0; z-index: 12; border-radius: 8px; background: rgba(7, 56, 74, 0); opacity: 0; transition: opacity 0.24s ease, background 0.24s ease; pointer-events: none; }
+.board-wrap .letter-grid-wrap { transition: filter 0.24s ease, transform 0.24s ease; }
+.board-wrap.intermission::after { background: rgba(7, 56, 74, 0.16); opacity: 1; }
+.board-wrap.intermission .letter-grid-wrap { filter: blur(2.8px) brightness(0.82) saturate(0.8); transform: scale(0.99); }
 .target-bar { max-width: min(680px, 100%); box-shadow: 0 10px 30px rgba(7, 56, 74, 0.12); }
-.target-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; color: var(--muted); font-weight: 700; }
-.deferred-badge { padding: 4px 10px; border-radius: 999px; background: rgba(10, 166, 173, 0.13); color: var(--primary-dark); font-size: 0.85rem; }
+.target-prompt { margin-bottom: 10px; color: var(--primary-dark); text-align: center; font-size: 0.95rem; font-weight: 900; }
 .target-words { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; justify-content: stretch; }
 .target-bar.single-target .target-words { grid-template-columns: minmax(180px, 0.5fr) minmax(0, 1fr); }
-.target-slot { min-width: 0; padding: 5px; border-radius: 8px; background: linear-gradient(180deg, rgba(7, 56, 74, 0.14), rgba(255, 255, 255, 0.52)); box-shadow: inset 0 2px 8px rgba(7, 56, 74, 0.14); }
-.slot-window { height: clamp(48px, 7vmin, 64px); overflow: hidden; border: 1px solid rgba(7, 56, 74, 0.18); border-radius: 8px; background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.34), transparent 48%), var(--ink); }
-.slot-reel { display: grid; animation: slotRoll 0.52s cubic-bezier(0.18, 0.89, 0.32, 1.24); }
-.slot-word { height: clamp(48px, 7vmin, 64px); display: grid; place-items: center; color: white; font-size: clamp(1rem, 2.2vmin, 1.4rem); font-weight: 900; letter-spacing: 0.08em; text-align: center; }
-.slot-word.ghost { color: rgba(255, 255, 255, 0.4); }
-.meaning-console { width: 100%; height: 100%; min-height: 360px; padding: 16px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; align-content: start; gap: 14px; overflow: hidden; }
+.target-word-display { min-width: 0; min-height: clamp(48px, 7vmin, 62px); display: grid; place-items: center; padding: 10px 14px; border: 2px solid var(--accent); border-radius: 8px; background: #ffffff; color: var(--ink); box-shadow: 0 7px 18px rgba(7, 56, 74, 0.12), inset 0 -3px 0 rgba(32, 196, 180, 0.16); font-size: clamp(1rem, 2.2vmin, 1.4rem); font-weight: 900; letter-spacing: 0.08em; text-align: center; }
+.meaning-console { width: 100%; height: 100%; min-height: 360px; padding: 16px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; align-content: start; gap: 14px; overflow: hidden; }
 .meaning-console-header { display: flex; justify-content: space-between; color: var(--muted); font-weight: 900; }
-.player-color-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.player-legend-item { min-width: 0; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.62); }
 .player-color-swatch { width: 10px; height: 10px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 15%, transparent); }
-.player-legend-item.player-1, .console-player.player-1 { color: var(--player-one); }
-.player-legend-item.player-2, .console-player.player-2 { color: var(--player-two); }
-.legend-player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; font-weight: 900; }
-.legend-found-count { font-size: 0.8rem; font-weight: 900; }
+.console-player.player-1, .console-score.player-1 { color: var(--player-one); }
+.console-player.player-2, .console-score.player-2 { color: var(--player-two); }
 .meaning-history { min-height: 0; display: grid; align-content: start; gap: 8px; overflow-y: auto; padding-right: 4px; }
 .meaning-console-empty { padding: 28px 12px; color: var(--muted); text-align: center; font-weight: 700; }
 .meaning-history-row { min-width: 0; display: grid; grid-template-columns: minmax(72px, auto) minmax(18px, 1fr) minmax(105px, 1.2fr); align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(7, 56, 74, 0.08); animation: meaningPanelIn 0.28s ease; }
@@ -199,7 +194,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @keyframes validTap { 0% { transform: scale(1); } 55% { transform: scale(1.12); } 100% { transform: scale(1.04); } }
 @keyframes meaningPanelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes meaningOverlayIn { from { opacity: 0; transform: translate(-50%, -46%) scale(0.94); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
-@keyframes slotRoll { from { transform: translateY(calc(-1 * clamp(48px, 7vmin, 64px))); } to { transform: translateY(0); } }
 @keyframes countdownPop { 0% { opacity: 0; transform: scale(0.78); } 65% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
 
 @media (max-width: 860px) {
@@ -219,7 +213,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .brand-logo-full { width: min(255px, 100%); max-height: 245px; }
   .found-word-burst { font-size: 1.1rem; padding: 8px 18px; }
   .letter-grid-wrap { transform: none; }
-  .target-header { flex-direction: column; }
   .room-code { font-size: 1.95rem; }
   .owner-mark { width: 86px; opacity: 0.68; }
   .wordset-options { grid-template-columns: 1fr; }
