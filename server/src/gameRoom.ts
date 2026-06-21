@@ -14,6 +14,7 @@ import {
   normalizeWordCount,
   type CellCoord,
   type CascadeSteps,
+  type FoundWordRecord,
   type GameEvent,
   type Player,
   type PublicGameState,
@@ -41,6 +42,7 @@ type InternalGameState = {
   playerSlots: Map<string, number>;
   scores: Record<string, number>;
   wordsFoundCount: number;
+  wordHistory: FoundWordRecord[];
   activeWords: string[];
   pools: WordPools;
   grid: string[][];
@@ -83,6 +85,7 @@ export class GameRoom {
       playerSlots: new Map(),
       scores: {},
       wordsFoundCount: 0,
+      wordHistory: [],
       activeWords: initialActive,
       pools: createInitialPools(getInitialUnusedWords(wordSetId, normalizedTotalWords)),
       grid: generateGrid(initialActive),
@@ -117,6 +120,7 @@ export class GameRoom {
       players: [...this.state.players],
       scores: { ...this.state.scores },
       wordsFoundCount: this.state.wordsFoundCount,
+      wordHistory: [...this.state.wordHistory],
       activeWords: [...this.state.activeWords],
       unusedCount: this.state.pools.unused.length,
       deferredWords: [...this.state.pools.deferred],
@@ -271,6 +275,7 @@ export class GameRoom {
     this.state.pools = createInitialPools(getInitialUnusedWords(this.state.wordSetId, this.state.totalWords));
     this.state.grid = generateGrid(initialActive);
     this.state.wordsFoundCount = 0;
+    this.state.wordHistory = [];
     this.state.status = 'playing';
     this.state.countdown = null;
     this.state.meaningUntil = null;
@@ -361,6 +366,7 @@ export class GameRoom {
     this.state.pools = trialPools;
     this.state.scores[playerId] = (this.state.scores[playerId] ?? 0) + points;
     this.state.wordsFoundCount += 1;
+    this.state.wordHistory.push({ word: foundWord, playerId, foundAt: Date.now() });
     this.state.lastFoundPath = path;
     this.state.lastFoundWord = foundWord;
     this.state.cascadeAnimating = true;
@@ -442,6 +448,7 @@ export class GameRoom {
     this.state.roundReadyUntil = null;
     this.state.winnerId = null;
     this.state.wordsFoundCount = 0;
+    this.state.wordHistory = [];
     this.state.lastEvent = { type: 'rematch', message: 'Rematch ready' };
     this.startCountdown();
   }

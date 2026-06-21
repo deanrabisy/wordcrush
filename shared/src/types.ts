@@ -19,6 +19,12 @@ export type Player = {
   name: string;
 };
 
+export type FoundWordRecord = {
+  word: string;
+  playerId: string;
+  foundAt: number;
+};
+
 export type GameStatus = 'lobby' | 'countdown' | 'playing' | 'finished' | 'paused';
 
 export type GameEvent = {
@@ -57,6 +63,7 @@ export type PublicGameState = {
   unusedCount: number;
   deferredWords: string[];
   foundWords: string[];
+  wordHistory: FoundWordRecord[];
   grid: string[][];
   status: GameStatus;
   layoutStartedAt: number;

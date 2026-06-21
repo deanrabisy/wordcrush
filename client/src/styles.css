@@ -88,7 +88,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .game-actions { display: flex; align-items: center; gap: 10px; }
 .room-pill { flex: 0 0 auto; padding: 8px 12px; border-radius: 999px; background: var(--panel-strong); border: 1px solid var(--line); color: var(--muted); font-weight: 800; }
 .compact-button { min-height: 38px; padding: 8px 12px; }
-.game-layout { width: min(1460px, 100%); min-height: 0; margin: 0 auto; display: grid; grid-template-columns: minmax(150px, 210px) minmax(620px, 1fr) minmax(210px, 270px); align-items: center; justify-items: center; gap: clamp(8px, 1.2vmin, 14px); }
+.game-layout { width: min(1460px, 100%); min-height: 0; margin: 0 auto; display: grid; grid-template-columns: minmax(150px, 200px) minmax(620px, 1fr) minmax(290px, 330px); align-items: center; justify-items: center; gap: clamp(8px, 1.2vmin, 14px); }
 .side-panel { width: 100%; align-self: stretch; display: flex; align-items: center; }
 .scoreboard, .target-bar { padding: 16px 18px; }
 .scoreboard, .target-bar { width: 100%; }
@@ -96,7 +96,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .player-name.you { color: var(--primary-dark); }
 .score { font-weight: 900; font-size: 1.25rem; }
 .event-message { margin: 8px 0 0; font-weight: 700; }
-.board-stage { position: relative; width: 100%; min-width: 0; display: grid; justify-items: center; gap: clamp(8px, 1.1vmin, 12px); }
+.board-stage { position: relative; width: 100%; min-width: 0; display: grid; justify-items: center; gap: clamp(8px, 1.1vmin, 12px); transform: translateY(-112px); }
+.right-panel { height: calc(100dvh - 28px); align-self: start; align-items: stretch; transform: translateY(-112px); }
 .board-wrap { position: relative; width: 100%; display: grid; place-items: center; }
 .target-bar { max-width: min(680px, 100%); box-shadow: 0 10px 30px rgba(7, 56, 74, 0.12); }
 .target-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; color: var(--muted); font-weight: 700; }
@@ -108,15 +109,19 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .slot-reel { display: grid; animation: slotRoll 0.52s cubic-bezier(0.18, 0.89, 0.32, 1.24); }
 .slot-word { height: clamp(48px, 7vmin, 64px); display: grid; place-items: center; color: white; font-size: clamp(1rem, 2.2vmin, 1.4rem); font-weight: 900; letter-spacing: 0.08em; text-align: center; }
 .slot-word.ghost { color: rgba(255, 255, 255, 0.4); }
-.meaning-console { width: 100%; min-height: 250px; padding: 16px; display: grid; align-content: start; gap: 14px; }
+.meaning-console { width: 100%; height: 100%; min-height: 360px; padding: 16px; display: grid; grid-template-rows: auto minmax(0, 1fr); align-content: start; gap: 14px; overflow: hidden; }
 .meaning-console-header { display: flex; justify-content: space-between; color: var(--muted); font-weight: 900; }
-.meaning-console-card { display: grid; gap: 12px; animation: meaningPanelIn 0.3s ease; }
-.meaning-word { display: inline-grid; place-items: center; justify-self: start; padding: 8px 12px; border-radius: 8px; background: var(--ink); color: white; font-weight: 900; letter-spacing: 0.08em; }
-.meaning-word.small { font-size: 0.9rem; }
-.meaning-text { min-width: 0; font-size: clamp(1.05rem, 2vmin, 1.35rem); font-weight: 900; color: var(--primary-dark); }
-.meaning-console-muted, .meaning-console-ready { min-height: 150px; display: grid; place-items: center; gap: 8px; text-align: center; color: var(--muted); font-weight: 800; }
-.meaning-console-ready { color: var(--primary-dark); }
-.meaning-ready-number { display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; background: var(--ink); color: white; font-size: 2.4rem; font-weight: 900; }
+.meaning-history { min-height: 0; display: grid; align-content: start; gap: 8px; overflow-y: auto; padding-right: 4px; }
+.meaning-console-empty { padding: 28px 12px; color: var(--muted); text-align: center; font-weight: 700; }
+.meaning-history-row { min-width: 0; display: grid; grid-template-columns: minmax(72px, auto) minmax(18px, 1fr) minmax(105px, 1.2fr); align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(7, 56, 74, 0.08); animation: meaningPanelIn 0.28s ease; }
+.history-word { min-width: 0; overflow-wrap: anywhere; font-size: 0.82rem; font-weight: 900; letter-spacing: 0.04em; }
+.history-word.player-1 { color: var(--primary-dark); }
+.history-word.player-2 { color: #9b4d13; }
+.history-connector { height: 1px; background: linear-gradient(90deg, rgba(7, 56, 74, 0.12), rgba(7, 56, 74, 0.34), rgba(7, 56, 74, 0.12)); }
+.history-meaning { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 0.82rem; font-weight: 700; }
+.meaning-overlay { position: absolute; left: 50%; top: 50%; z-index: 24; width: min(520px, calc(100% - 44px)); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px; padding: 20px 22px; border: 1px solid rgba(7, 56, 74, 0.18); border-radius: 8px; background: rgba(255, 255, 255, 0.97); box-shadow: 0 24px 70px rgba(7, 56, 74, 0.28); transform: translate(-50%, -50%); animation: meaningOverlayIn 0.34s ease; pointer-events: none; }
+.meaning-overlay-word { padding: 10px 14px; border-radius: 8px; background: var(--ink); color: white; font-size: clamp(1rem, 2.3vmin, 1.35rem); font-weight: 900; letter-spacing: 0.08em; }
+.meaning-overlay-text { min-width: 0; color: var(--primary-dark); font-size: clamp(1.1rem, 2.5vmin, 1.55rem); font-weight: 900; }
 
 .letter-grid-wrap { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; }
 .found-word-burst { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); z-index: 10; padding: 10px 28px; border-radius: 999px; background: linear-gradient(135deg, var(--gold), var(--primary)); color: var(--ink); font-size: clamp(1.1rem, 2.4vmin, 1.65rem); font-weight: 900; letter-spacing: 0.12em; animation: wordBurst 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards; pointer-events: none; box-shadow: 0 12px 36px rgba(0, 112, 144, 0.32); }
@@ -150,7 +155,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .game-over h2, .game-over p { margin: 0; }
 .owner-mark {
   position: fixed;
-  right: 14px;
+  left: 14px;
   bottom: 10px;
   width: clamp(74px, 8.6vw, 112px);
   aspect-ratio: 1;
@@ -179,6 +184,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @keyframes invalidTap { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 75% { transform: translateX(-2px); } }
 @keyframes validTap { 0% { transform: scale(1); } 55% { transform: scale(1.12); } 100% { transform: scale(1.04); } }
 @keyframes meaningPanelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes meaningOverlayIn { from { opacity: 0; transform: translate(-50%, -46%) scale(0.94); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes slotRoll { from { transform: translateY(calc(-1 * clamp(48px, 7vmin, 64px))); } to { transform: translateY(0); } }
 @keyframes countdownPop { 0% { opacity: 0; transform: scale(0.78); } 65% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
 
@@ -194,6 +200,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .game-header { align-items: flex-start; flex-direction: column; }
   .game-layout { grid-template-columns: 1fr; align-items: start; }
   .side-panel { align-self: auto; }
+  .board-stage, .right-panel { height: auto; transform: none; }
   .brand-logo { width: 64px; height: 64px; }
   .brand-logo-full { width: min(255px, 100%); max-height: 245px; }
   .found-word-burst { font-size: 1.1rem; padding: 8px 18px; }
@@ -204,6 +211,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .wordset-options { grid-template-columns: 1fr; }
   .target-words, .target-bar.single-target .target-words { grid-template-columns: 1fr; }
   .meaning-console { min-height: 180px; }
+  .meaning-overlay { grid-template-columns: 1fr; text-align: center; }
+  .meaning-overlay-word { justify-self: center; }
 }
 
 @media (max-height: 720px) {

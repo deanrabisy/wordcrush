@@ -3,7 +3,7 @@ import { getWordMeaning, type SelectionStatus } from '@word-crush-duel/shared';
 import { GameOver } from './components/GameOver';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
-import { MeaningConsole } from './components/MeaningPopup';
+import { MeaningConsole, MeaningOverlay } from './components/MeaningPopup';
 import { Scoreboard, TargetBar } from './components/TargetBar';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useSoundEffects } from './hooks/useSoundEffects';
@@ -105,6 +105,9 @@ export default function App() {
   const roundCountdown = countdownActive && gameState.roundReadyUntil
     ? Math.max(1, Math.ceil((gameState.roundReadyUntil - now) / 1000))
     : null;
+  const visibleMeaningHistory = meaningActive
+    ? gameState.wordHistory.slice(0, -1)
+    : gameState.wordHistory;
   const toggleSound = () => {
     setSoundMuted((current) => {
       const next = !current;
@@ -178,8 +181,10 @@ export default function App() {
             deferredWords={gameState.deferredWords}
           />
 
-          {isPlaying && (
-            <div className="board-wrap">
+          <div className="board-wrap">
+            <MeaningOverlay word={foundWord} meaning={foundMeaning} active={meaningActive} />
+            {isPlaying && (
+              <>
               {gameState.status === 'countdown' && gameState.countdown !== null && (
                 <div className="round-countdown-overlay">{gameState.countdown || 'Go!'}</div>
               )}
@@ -201,8 +206,9 @@ export default function App() {
                 onPreviewSelection={handlePreviewSelection}
                 onSubmit={handleSubmit}
               />
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </section>
 
         {isFinished && (
@@ -215,7 +221,7 @@ export default function App() {
         )}
 
         <aside className="side-panel right-panel">
-          <MeaningConsole word={foundWord} meaning={foundMeaning} active={meaningActive} countdown={roundCountdown} />
+          <MeaningConsole history={visibleMeaningHistory} players={gameState.players} />
         </aside>
       </div>
       <img className="owner-mark" src={ownerLogoSrc} alt="Adaptive Dean Design" />
