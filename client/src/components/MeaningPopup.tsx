@@ -24,11 +24,26 @@ type MeaningConsoleProps = {
 };
 
 export function MeaningConsole({ history, players, scores }: MeaningConsoleProps) {
+  const foundCounts = history.reduce<Record<string, number>>((counts, entry) => {
+    counts[entry.playerId] = (counts[entry.playerId] ?? 0) + 1;
+    return counts;
+  }, {});
+
   return (
     <div className="meaning-console card" aria-live="polite">
       <div className="meaning-console-header">
         <span>Word meanings</span>
         <span>{history.length}</span>
+      </div>
+
+      <div className="player-color-legend" aria-label="Player colors">
+        {players.map((player, index) => player && (
+          <div className={`player-legend-item player-${index + 1}`} key={player.id}>
+            <span className="player-color-swatch" aria-hidden="true" />
+            <span className="legend-player-name">{player.name}</span>
+            <span className="legend-found-count">{foundCounts[player.id] ?? 0}</span>
+          </div>
+        ))}
       </div>
 
       <div className="meaning-history">
@@ -56,7 +71,10 @@ export function MeaningConsole({ history, players, scores }: MeaningConsoleProps
       <div className="meaning-score-footer">
         {players.map((player, index) => player && (
           <div className="console-score-row" key={player.id}>
-            <span className={`console-player player-${index + 1}`}>{player.name}</span>
+            <span className={`console-player player-${index + 1}`}>
+              <span className="player-color-swatch" aria-hidden="true" />
+              {player.name}
+            </span>
             <span className="console-score">{scores[player.id] ?? 0}</span>
           </div>
         ))}

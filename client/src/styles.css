@@ -9,6 +9,8 @@
   --primary-dark: #006f90;
   --accent: #20c4b4;
   --gold: #d9c86c;
+  --player-one: #007f95;
+  --player-two: #b58a18;
   --shadow: 0 18px 50px rgba(7, 56, 74, 0.16);
   color: var(--ink);
   background: linear-gradient(135deg, rgba(32, 196, 180, 0.16), transparent 34%), radial-gradient(circle at 86% 8%, rgba(0, 112, 144, 0.18), transparent 30%), var(--bg);
@@ -110,21 +112,26 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .slot-reel { display: grid; animation: slotRoll 0.52s cubic-bezier(0.18, 0.89, 0.32, 1.24); }
 .slot-word { height: clamp(48px, 7vmin, 64px); display: grid; place-items: center; color: white; font-size: clamp(1rem, 2.2vmin, 1.4rem); font-weight: 900; letter-spacing: 0.08em; text-align: center; }
 .slot-word.ghost { color: rgba(255, 255, 255, 0.4); }
-.meaning-console { width: 100%; height: 100%; min-height: 360px; padding: 16px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; align-content: start; gap: 14px; overflow: hidden; }
+.meaning-console { width: 100%; height: 100%; min-height: 360px; padding: 16px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; align-content: start; gap: 14px; overflow: hidden; }
 .meaning-console-header { display: flex; justify-content: space-between; color: var(--muted); font-weight: 900; }
+.player-color-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.player-legend-item { min-width: 0; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.62); }
+.player-color-swatch { width: 10px; height: 10px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 15%, transparent); }
+.player-legend-item.player-1, .console-player.player-1 { color: var(--player-one); }
+.player-legend-item.player-2, .console-player.player-2 { color: var(--player-two); }
+.legend-player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; font-weight: 900; }
+.legend-found-count { font-size: 0.8rem; font-weight: 900; }
 .meaning-history { min-height: 0; display: grid; align-content: start; gap: 8px; overflow-y: auto; padding-right: 4px; }
 .meaning-console-empty { padding: 28px 12px; color: var(--muted); text-align: center; font-weight: 700; }
 .meaning-history-row { min-width: 0; display: grid; grid-template-columns: minmax(72px, auto) minmax(18px, 1fr) minmax(105px, 1.2fr); align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(7, 56, 74, 0.08); animation: meaningPanelIn 0.28s ease; }
 .history-word { min-width: 0; overflow-wrap: anywhere; font-size: 0.82rem; font-weight: 900; letter-spacing: 0.04em; }
-.history-word.player-1 { color: var(--primary-dark); }
-.history-word.player-2 { color: #9b4d13; }
+.history-word.player-1 { color: var(--player-one); }
+.history-word.player-2 { color: var(--player-two); }
 .history-connector { height: 1px; background: linear-gradient(90deg, rgba(7, 56, 74, 0.12), rgba(7, 56, 74, 0.34), rgba(7, 56, 74, 0.12)); }
 .history-meaning { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 0.82rem; font-weight: 700; }
 .meaning-score-footer { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid var(--line); }
 .console-score-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.console-player { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
-.console-player.player-1 { color: var(--primary-dark); }
-.console-player.player-2 { color: #9b4d13; }
+.console-player { min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
 .console-score { font-size: 1.3rem; font-weight: 900; }
 .meaning-overlay { position: absolute; left: 50%; top: 50%; z-index: 24; width: min(520px, calc(100% - 44px)); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px; padding: 20px 22px; border: 1px solid rgba(7, 56, 74, 0.18); border-radius: 8px; background: rgba(255, 255, 255, 0.97); box-shadow: 0 24px 70px rgba(7, 56, 74, 0.28); transform: translate(-50%, -50%); animation: meaningOverlayIn 0.34s ease; pointer-events: none; }
 .meaning-overlay-word { padding: 10px 14px; border-radius: 8px; background: var(--ink); color: white; font-size: clamp(1rem, 2.3vmin, 1.35rem); font-weight: 900; letter-spacing: 0.08em; }
