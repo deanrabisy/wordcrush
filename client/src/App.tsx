@@ -5,6 +5,7 @@ import { GameSettings } from './components/GameSettings';
 import { LetterGrid } from './components/LetterGrid';
 import { Lobby } from './components/Lobby';
 import { MeaningConsole, MeaningOverlay } from './components/MeaningPopup';
+import { QuizOverlay } from './components/QuizOverlay';
 import { TargetBar } from './components/TargetBar';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useSoundEffects } from './hooks/useSoundEffects';
@@ -27,6 +28,7 @@ export default function App() {
     joinRoom,
     submitSelection,
     previewSelection,
+    submitQuizAnswer,
     rematch,
     resetGame,
     updateGameSettings,
@@ -101,9 +103,15 @@ export default function App() {
       gameState.status === 'playing' &&
       now < gameState.roundReadyUntil,
   );
+  const quizActive = Boolean(
+    gameState.quiz &&
+      now >= gameState.quiz.startsAt &&
+      now < gameState.quiz.endsAt,
+  );
+  const countdownStartsAt = gameState.quiz?.endsAt ?? gameState.meaningUntil;
   const countdownActive = Boolean(
     roundLocked &&
-      (!gameState.meaningUntil || now >= gameState.meaningUntil),
+      (!countdownStartsAt || now >= countdownStartsAt),
   );
   const roundCountdown = countdownActive && gameState.roundReadyUntil
     ? Math.max(1, Math.ceil((gameState.roundReadyUntil - now) / 1000))
@@ -183,6 +191,14 @@ export default function App() {
 
           <div className={`board-wrap ${intermissionActive ? 'intermission' : ''}`}>
             <MeaningOverlay word={foundWord} meaning={foundMeaning} active={meaningActive} />
+            {quizActive && gameState.quiz && (
+              <QuizOverlay
+                quiz={gameState.quiz}
+                playerId={playerId}
+                now={now}
+                onAnswer={submitQuizAnswer}
+              />
+            )}
             {isPlaying && (
               <>
                 {gameState.status === 'countdown' && gameState.countdown !== null && (

@@ -13,6 +13,8 @@ export type CascadeSteps = {
 export const CASCADE_DURATION_MS = 2400;
 export const MEANING_DURATION_MS = 3000;
 export const ROUND_COUNTDOWN_MS = 3000;
+export const QUIZ_DURATION_MS = 10000;
+export const QUIZ_RESULT_MS = 1500;
 
 export type Player = {
   id: string;
@@ -23,6 +25,23 @@ export type FoundWordRecord = {
   word: string;
   playerId: string;
   foundAt: number;
+};
+
+export type QuizAnswer = {
+  choice: string;
+  correct: boolean;
+  answeredAt: number;
+  points: number;
+};
+
+export type QuizState = {
+  id: string;
+  targetWord: string;
+  prompt: string;
+  choices: string[];
+  startsAt: number;
+  endsAt: number;
+  answers: Record<string, QuizAnswer>;
 };
 
 export type GameStatus = 'lobby' | 'countdown' | 'playing' | 'finished' | 'paused';
@@ -70,6 +89,7 @@ export type PublicGameState = {
   countdown: number | null;
   meaningUntil: number | null;
   roundReadyUntil: number | null;
+  quiz: QuizState | null;
   winnerId: string | null;
   lastEvent: GameEvent | null;
   resolving: boolean;

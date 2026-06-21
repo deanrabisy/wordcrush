@@ -10,6 +10,7 @@ import {
   rematchState,
   resetGameState,
   settleCascadeState,
+  submitQuizAnswerState,
   submitSelectionState,
   toPublicGameState,
   updateGameSettingsState,
@@ -162,6 +163,15 @@ export function useGameSocket() {
     [playerId],
   );
 
+  const submitQuizAnswer = useCallback(async (choice: string) => {
+    if (!firebaseConfigured || !gameState) return;
+    const db = getFirebaseDatabase();
+    await runTransaction(ref(db, roomPath(gameState.roomCode)), (current: FirebaseGameState | null) => {
+      if (!current) return current;
+      return submitQuizAnswerState(current, playerId, choice).state;
+    });
+  }, [gameState, playerId]);
+
   const rematch = useCallback(async () => {
     if (!firebaseConfigured || !gameState) return;
     const db = getFirebaseDatabase();
@@ -204,6 +214,7 @@ export function useGameSocket() {
     startGame: () => undefined,
     submitSelection,
     previewSelection,
+    submitQuizAnswer,
     rematch,
     resetGame,
     updateGameSettings,
