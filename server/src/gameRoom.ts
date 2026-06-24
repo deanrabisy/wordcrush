@@ -18,7 +18,6 @@ import {
   type GameEvent,
   type Player,
   type PublicGameState,
-  type QuizState,
   type WordPools,
 } from '@word-crush-duel/shared';
 import { cascadeAfterFind } from './cascade.js';
@@ -52,7 +51,6 @@ type InternalGameState = {
   countdown: number | null;
   meaningUntil: number | null;
   roundReadyUntil: number | null;
-  quiz: QuizState | null;
   winnerId: string | null;
   lastEvent: GameEvent | null;
   resolving: boolean;
@@ -96,7 +94,6 @@ export class GameRoom {
       countdown: null,
       meaningUntil: null,
       roundReadyUntil: null,
-      quiz: null,
       winnerId: null,
       lastEvent: null,
       resolving: false,
@@ -134,7 +131,6 @@ export class GameRoom {
       countdown: this.state.countdown,
       meaningUntil: this.state.meaningUntil,
       roundReadyUntil: this.state.roundReadyUntil,
-      quiz: this.state.quiz,
       winnerId: this.state.winnerId,
       lastEvent: this.state.lastEvent,
       resolving: this.state.resolving,
@@ -284,7 +280,6 @@ export class GameRoom {
     this.state.countdown = null;
     this.state.meaningUntil = null;
     this.state.roundReadyUntil = Date.now() + ROUND_COUNTDOWN_MS;
-    this.state.quiz = null;
     this.state.winnerId = null;
     this.state.resolving = false;
     this.state.cascadeAnimating = false;
@@ -377,7 +372,6 @@ export class GameRoom {
     this.state.cascadeAnimating = true;
     this.state.meaningUntil = null;
     this.state.roundReadyUntil = null;
-    this.state.quiz = null;
     this.state.cascadeSteps = cascade;
     this.state.grid = cascade.finalGrid;
 
@@ -452,7 +446,6 @@ export class GameRoom {
     this.state.countdown = null;
     this.state.meaningUntil = null;
     this.state.roundReadyUntil = null;
-    this.state.quiz = null;
     this.state.winnerId = null;
     this.state.wordsFoundCount = 0;
     this.state.wordHistory = [];

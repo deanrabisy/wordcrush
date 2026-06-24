@@ -4,16 +4,12 @@ import {
   FORWARD_DIRECTIONS,
   GRID_SIZE,
   MEANING_DURATION_MS,
-  QUIZ_DURATION_MS,
-  QUIZ_RESULT_MS,
   ROUND_COUNTDOWN_MS,
   SPEED_BONUS,
   SPEED_BONUS_MS,
   TOTAL_WORDS,
   DEFAULT_WORD_SET_ID,
-  getAllWords,
   normalizeWordCount,
-  getWordMeaning,
   getInitialActiveWords,
   getInitialUnusedWords,
   type CellCoord,
@@ -21,7 +17,6 @@ import {
   type GameEvent,
   type Player,
   type PublicGameState,
-  type QuizState,
   type WordPools,
 } from '@word-crush-duel/shared';
 
@@ -241,40 +236,6 @@ function handleWordFound(pools: WordPools, activeWords: string[], foundWord: str
   return { nextActive, deferredWord: null };
 }
 
-function quizCheckpoints(totalWords: number): Set<number> {
-  return new Set([0.25, 0.5, 0.75].map((progress) => Math.round(totalWords * progress)));
-}
-
-function shouldStartQuiz(wordsFoundCount: number, totalWords: number): boolean {
-  return wordsFoundCount < totalWords && quizCheckpoints(totalWords).has(wordsFoundCount);
-}
-
-function createQuiz(state: FirebaseGameState, startsAt: number): QuizState | null {
-  const targetWord = state.wordHistory.at(-1)?.word;
-  const meaning = getWordMeaning(targetWord);
-  if (!targetWord || !meaning) return null;
-
-  const encountered = [...state.wordHistory].reverse().map((entry) => entry.word);
-  const candidates = [...new Set([
-    targetWord,
-    ...encountered.filter((word) => word !== targetWord),
-    ...getAllWords(state.wordSetId).filter((word) => word !== targetWord),
-  ])].slice(0, 3);
-  if (candidates.length < 3) return null;
-
-  const offset = state.wordsFoundCount % candidates.length;
-  const choices = candidates.map((_, index) => candidates[(index + offset) % candidates.length]);
-  return {
-    id: `${state.wordsFoundCount}-${targetWord}`,
-    targetWord,
-    prompt: `The word that means "${meaning}" is ____.`,
-    choices,
-    startsAt,
-    endsAt: startsAt + QUIZ_DURATION_MS,
-    answers: {},
-  };
-}
-
 function normalizePlayers(players: unknown): [Player | null, Player | null] {
   if (Array.isArray(players)) return [(players[0] as Player | null) ?? null, (players[1] as Player | null) ?? null];
   const keyed = players as Record<string, Player | null> | null | undefined;
@@ -327,7 +288,6 @@ export function normalizeRoomState(state: FirebaseGameState): FirebaseGameState 
     countdown: state.countdown ?? null,
     meaningUntil: state.meaningUntil ?? null,
     roundReadyUntil: state.roundReadyUntil ?? null,
-    quiz: state.quiz ?? null,
     winnerId: state.winnerId ?? null,
     lastEvent: state.lastEvent ?? null,
     resolving: Boolean(state.resolving),
@@ -361,7 +321,6 @@ export function toPublicGameState(state: FirebaseGameState): PublicGameState {
     countdown: normalized.countdown,
     meaningUntil: normalized.meaningUntil,
     roundReadyUntil: normalized.roundReadyUntil,
-    quiz: normalized.quiz,
     winnerId: normalized.winnerId,
     lastEvent: normalized.lastEvent,
     resolving: normalized.resolving,
@@ -396,7 +355,6 @@ function beginPlaying(state: FirebaseGameState, now: number): FirebaseGameState 
     countdown: null,
     meaningUntil: null,
     roundReadyUntil,
-    quiz: null,
     winnerId: null,
     lastEvent: { type: 'game_started', message: 'Go!' },
     resolving: false,
@@ -439,7 +397,6 @@ export function createRoomState(
     countdown: null,
     meaningUntil: null,
     roundReadyUntil: null,
-    quiz: null,
     winnerId: null,
     lastEvent: { type: 'player_joined', playerId, message: player.name + ' joined' },
     resolving: false,
@@ -505,49 +462,11 @@ export function submitSelectionState(current: FirebaseGameState, playerId: strin
       cascadeAnimating: true,
       meaningUntil: null,
       roundReadyUntil: null,
-      quiz: null,
       lastFoundPath: path,
       lastFoundWord: foundWord,
       cascadeSteps,
       selections: {},
       lastEvent,
-      updatedAt: now,
-    },
-    error: null,
-  };
-}
-
-export function submitQuizAnswerState(
-  current: FirebaseGameState,
-  playerId: string,
-  choice: string,
-  now = Date.now(),
-): { state: FirebaseGameState; error: string | null } {
-  const state = normalizeRoomState(current);
-  const quiz = state.quiz;
-  if (!quiz || now < quiz.startsAt || now >= quiz.endsAt) return { state, error: 'Quiz is not active' };
-  if (!state.players.some((player) => player?.id === playerId)) return { state, error: 'You are not in this room' };
-  if (quiz.answers[playerId]) return { state, error: null };
-
-  const correct = choice === quiz.targetWord;
-  const previousCorrect = Object.values(quiz.answers).filter((answer) => answer.correct).length;
-  const points = correct ? (previousCorrect === 0 ? 50 : 25) : 0;
-  const answers = {
-    ...quiz.answers,
-    [playerId]: { choice, correct, answeredAt: now, points },
-  };
-  const activePlayerCount = state.players.filter(Boolean).length;
-  const allAnswered = Object.keys(answers).length >= activePlayerCount;
-  const endsAt = allAnswered ? Math.min(quiz.endsAt, now + QUIZ_RESULT_MS) : quiz.endsAt;
-  const roundReadyUntil = allAnswered ? endsAt + ROUND_COUNTDOWN_MS : state.roundReadyUntil;
-
-  return {
-    state: {
-      ...state,
-      quiz: { ...quiz, answers, endsAt },
-      scores: { ...state.scores, [playerId]: (state.scores[playerId] ?? 0) + points },
-      roundReadyUntil,
-      layoutStartedAt: roundReadyUntil ?? state.layoutStartedAt,
       updatedAt: now,
     },
     error: null,
@@ -567,10 +486,7 @@ export function settleCascadeState(current: FirebaseGameState, now = Date.now())
   let state = normalizeRoomState(current);
   if (!state.cascadeAnimating) return state;
   const meaningUntil = now + MEANING_DURATION_MS;
-  const quiz = shouldStartQuiz(state.wordsFoundCount, state.totalWords)
-    ? createQuiz(state, meaningUntil)
-    : null;
-  const roundReadyUntil = (quiz?.endsAt ?? meaningUntil) + ROUND_COUNTDOWN_MS;
+  const roundReadyUntil = meaningUntil + ROUND_COUNTDOWN_MS;
   state = {
     ...state,
     cascadeAnimating: false,
@@ -580,7 +496,6 @@ export function settleCascadeState(current: FirebaseGameState, now = Date.now())
     cascadeSteps: null,
     meaningUntil,
     roundReadyUntil,
-    quiz,
     updatedAt: now,
   };
   if (state.pools.found.length >= state.totalWords) return { ...finishGame(state), updatedAt: now };
@@ -634,7 +549,6 @@ export function resetGameState(current: FirebaseGameState, now = Date.now()): Fi
     countdown: null,
     meaningUntil: null,
     roundReadyUntil: null,
-    quiz: null,
     winnerId: null,
     lastEvent: { type: 'rematch', message: 'Game reset' },
     resolving: false,
